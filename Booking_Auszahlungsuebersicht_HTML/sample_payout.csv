@@ -1,0 +1,3 @@
+Art/Transaktionsart,Referenznummer,Unterkunftsname,Bruttobetrag,Kommission,Zahlungsgebuehr
+Buchung,10001,"PrimeTimeSuites | Nahe Messe&Hbf","200,00","-30,00","-5,00"
+Buchung,10002,"Art Gallery","150,00","-22,50","-4,00"

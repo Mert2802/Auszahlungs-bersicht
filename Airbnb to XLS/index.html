@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Airbnb CSV zu Excel</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">Airbnb to XLS</p>
+          <h1>CSV filtern, zuordnen, als Excel exportieren</h1>
+          <p class="sub">
+            CSV hochladen, Regeln pflegen und eine abgespeckte Tabelle
+            mit Beherbergungs-ID und Strasse erzeugen.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button id="openMappingBtn" class="primary">Regeln &amp; Spalten bearbeiten</button>
+          <button id="resetMappingBtn" class="ghost">Zuruecksetzen</button>
+        </div>
+      </header>
+
+      <section class="panel split">
+        <div class="upload-card">
+          <p class="section-title">CSV-Datei</p>
+          <div id="dropZone" class="dropzone" tabindex="0">
+            <input id="csvFile" type="file" accept=".csv,text/csv" class="visually-hidden" />
+            <div class="dropzone-inner">
+              <p class="drop-title">Datei hier ablegen</p>
+              <p class="drop-sub">oder klicken zum Auswaehlen</p>
+              <button id="pickFileBtn" type="button" class="ghost">Datei waehlen</button>
+              <p id="fileName" class="file-name">Keine Datei ausgewaehlt</p>
+            </div>
+          </div>
+          <div class="progress-row">
+            <div class="progress-track">
+              <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <span id="progressText">0%</span>
+          </div>
+          <p class="hint">Die Datei bleibt lokal im Browser.</p>
+        </div>
+
+        <div class="action-card">
+          <h2>Auswertung</h2>
+          <p class="subtle">
+            Vorschau erzeugen, Ergebnis pruefen und direkt als echte Excel-Datei
+            herunterladen.
+          </p>
+          <div class="actions">
+            <button id="previewBtn">Vorschau erzeugen</button>
+            <button id="downloadBtn" class="primary" disabled>Excel (.xlsx) herunterladen</button>
+          </div>
+          <div id="status" class="status"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="table-wrap">
+          <table id="previewTable" class="table-editable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="mappingOverlay" class="overlay" aria-hidden="true">
+      <div class="overlay-card" role="dialog" aria-modal="true">
+        <div class="overlay-header">
+          <div>
+            <p class="eyebrow">Konfiguration</p>
+            <h2>Regeln, Strassen, Spalten</h2>
+            <p class="subtle">
+              Reihenfolge per Drag &amp; Drop aendern. Erste passende Regel gewinnt.
+            </p>
+          </div>
+          <button id="closeOverlayBtn" class="icon-button" aria-label="Schliessen">x</button>
+        </div>
+
+        <div class="overlay-body">
+          <section>
+            <h3>Seitentitel</h3>
+            <p class="hint">Zwei Titelzeilen oben, zentriert und fett.</p>
+            <div class="list">
+              <div class="list-row header-config">
+                <span class="drag-handle" aria-hidden="true"></span>
+                <input id="titleLine1" type="text" placeholder="Titelzeile 1" />
+                <input id="titleLine2" type="text" placeholder="Titelzeile 2" />
+                <span class="toggle">
+                  <input id="groupRowToggle" type="checkbox" />
+                  <span>SP-Zeile anzeigen</span>
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3>Inserat -> ID</h3>
+            <p class="hint">Text aus dem Inserat, der enthalten sein muss.</p>
+            <div id="ruleList" class="list"></div>
+            <button id="addRuleBtn">Regel hinzufuegen</button>
+          </section>
+
+          <section>
+            <h3>ID -> Strasse</h3>
+            <p class="hint">Beherbergungs-ID mit Strasse verknuepfen.</p>
+            <div id="streetList" class="list"></div>
+            <button id="addStreetBtn">Strasse hinzufuegen</button>
+          </section>
+
+          <section>
+            <h3>Spalten &amp; Formeln</h3>
+            <p class="hint">
+              Spaltennamen oder Berechnungen aendern. Verfuegbare Variablen:
+              <code>brutto</code>, <code>reinigung</code>, <code>anpassungen</code>,
+              <code>service</code>, <code>adjustment_service</code>, <code>payout</code>,
+              <code>sp1</code>...<code>sp7</code>. Keys duerfen nur Buchstaben, Zahlen und
+              _ enthalten.
+            </p>
+            <div id="columnList" class="list"></div>
+            <button id="addColumnBtn">Spalte hinzufuegen</button>
+          </section>
+        </div>
+
+        <div class="overlay-footer">
+          <div class="hint">Wird im Browser gespeichert (localStorage).</div>
+          <div class="actions">
+            <button id="cancelMappingBtn">Abbrechen</button>
+            <button id="saveMappingBtn" class="primary">Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

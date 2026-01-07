@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Booking Auszahlungsuebersicht</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Booking Auszahlungsuebersicht</h1>
+      <p>CSV hochladen, Mapping pflegen, Ergebnis als XLSX exportieren.</p>
+    </header>
+
+    <main class="app-main">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Dateien hochladen</h2>
+            <p class="subtle">CSV hochladen, Vorschau bearbeiten, Export starten.</p>
+          </div>
+          <button id="openOverlayBtn" class="secondary">Konfiguration</button>
+        </div>
+        <div class="upload-grid">
+          <label class="file-card drop-zone" data-drop="booking">
+            <span>1) BookingList CSV (Separator ;)</span>
+            <input id="bookingFile" type="file" accept=".csv">
+            <div class="file-meta">
+              <span id="bookingName" class="file-name">Keine Datei</span>
+              <div class="progress">
+                <div id="bookingProgress" class="progress-bar"></div>
+              </div>
+            </div>
+          </label>
+          <label class="file-card drop-zone" data-drop="payout">
+            <span>2) Payout CSV (Separator ,)</span>
+            <input id="payoutFile" type="file" accept=".csv">
+            <div class="file-meta">
+              <span id="payoutName" class="file-name">Keine Datei</span>
+              <div class="progress">
+                <div id="payoutProgress" class="progress-bar"></div>
+              </div>
+            </div>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="runBtn" class="primary">Auswerten</button>
+          <button id="downloadBtn" class="secondary" disabled>Ergebnis.xlsx herunterladen</button>
+        </div>
+        <div id="status" class="status" role="status"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Ergebnis (editierbar)</h2>
+        <div class="table-wrap">
+          <table id="resultTable" class="table-editable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="mappingOverlay" class="overlay" aria-hidden="true">
+    <div class="overlay-card" role="dialog" aria-modal="true">
+      <div class="overlay-header">
+        <div>
+          <p class="eyebrow">Konfiguration</p>
+          <h2>Regeln, Strassen, Spalten</h2>
+          <p class="subtle">Aenderungen werden im Browser gespeichert.</p>
+        </div>
+        <button id="closeOverlayBtn" class="icon-button" aria-label="Schliessen">x</button>
+      </div>
+
+      <div class="overlay-body">
+        <section>
+          <h3>Seitentitel</h3>
+          <p class="hint">Zwei Titelzeilen oben, zentriert und fett.</p>
+          <div class="settings-grid">
+            <label>
+              Titelzeile 1
+              <input id="titleLine1" type="text" placeholder="Titelzeile 1">
+            </label>
+            <label>
+              Titelzeile 2
+              <input id="titleLine2" type="text" placeholder="Titelzeile 2">
+            </label>
+            <label class="checkbox">
+              <input id="showGroupRow" type="checkbox">
+              SP-Gruppenzeile anzeigen
+            </label>
+          </div>
+        </section>
+
+        <section>
+          <h3>Mapping (Keyword -> ID + Strasse)</h3>
+          <p class="hint">Text aus dem Inserat, der enthalten sein muss.</p>
+          <div class="panel-actions">
+            <button id="saveMappingBtn" class="secondary">Mapping speichern</button>
+            <button id="resetMappingBtn" class="ghost">Mapping zuruecksetzen</button>
+          </div>
+          <div class="table-wrap">
+            <table id="mappingTable">
+              <thead>
+                <tr>
+                  <th>Keyword</th>
+                  <th>Beherbergungsidentifikationsnummer</th>
+                  <th>Strasse</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button id="addMappingRowBtn" class="ghost">Zeile hinzufuegen</button>
+        </section>
+
+        <section>
+          <h3>Spalten & Gruppen</h3>
+          <p class="hint">Spaltennamen und SP-Gruppenlabels fuer Vorschau und XLSX.</p>
+          <div class="panel-actions">
+            <button id="saveRenamesBtn" class="secondary">Spaltennamen speichern</button>
+            <button id="resetRenamesBtn" class="ghost">Spaltennamen zuruecksetzen</button>
+          </div>
+          <div class="table-wrap">
+            <table id="renamesTable">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Original</th>
+                  <th>Neu</th>
+                  <th>Gruppe</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="overlay-footer">
+        <div class="hint">Wird im Browser gespeichert (localStorage).</div>
+        <div class="actions">
+          <button id="closeOverlayBtnFooter">Schliessen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

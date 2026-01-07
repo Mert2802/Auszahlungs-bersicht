@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auszahlungsuebersicht Hub</title>
+  <link rel="stylesheet" href="hub.css">
+</head>
+<body class="locked">
+  <div id="loginGate" class="login-gate" aria-hidden="false">
+    <div class="login-card" role="dialog" aria-modal="true">
+      <h2>Login</h2>
+      <p class="subtle">Bitte anmelden, um fortzufahren.</p>
+      <form id="loginForm">
+        <label>
+          ID
+          <input id="loginId" type="text" autocomplete="username" required>
+        </label>
+        <label>
+          Passwort
+          <input id="loginPw" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary" type="submit">Anmelden</button>
+        <p id="loginError" class="error" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
+  <header class="hub-header">
+    <div>
+      <p class="eyebrow">Launcher</p>
+      <h1>Auszahlungsuebersicht</h1>
+      <p class="subtle">Waehle den Editor und arbeite im selben Tab.</p>
+    </div>
+    <div class="actions">
+      <button class="primary" data-target="airbnb" type="button">Airbnb Editor</button>
+      <button class="secondary" data-target="booking" type="button">Booking Editor</button>
+      <button id="logoutBtn" class="danger" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main class="hub-main">
+    <iframe id="appFrame" title="Editor" src=""></iframe>
+  </main>
+
+  <script src="hub.js"></script>
+</body>
+</html>
+
