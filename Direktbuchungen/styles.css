@@ -1,13 +1,13 @@
 :root {
-  --bg: #0b1118;
-  --surface: #141c24;
-  --surface-2: #1a2330;
-  --accent: #ff8a3d;
-  --accent-2: #2dd4bf;
-  --text: #f4f1ec;
-  --muted: #a6b0be;
-  --border: #2a3442;
-  --shadow: rgba(0, 0, 0, 0.35);
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f2f4f7;
+  --accent: #f28c0f;
+  --accent-2: #f3a948;
+  --text: #3e3e3e;
+  --muted: #6f6f6f;
+  --border: #e1e4ea;
+  --shadow: rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -16,9 +16,9 @@
 
 body {
   margin: 0;
-  font-family: "Bahnschrift", "Franklin Gothic Medium", "Trebuchet MS", sans-serif;
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
   color: var(--text);
-  background: radial-gradient(circle at top left, #203040 0%, #0b1118 60%);
+  background: radial-gradient(circle at top left, #ffffff 0%, #f3f4f6 60%);
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
@@ -29,7 +29,7 @@ body {
   inset: -20vh -10vw auto auto;
   width: 480px;
   height: 480px;
-  background: radial-gradient(circle, rgba(255, 138, 61, 0.25), transparent 65%);
+  background: radial-gradient(circle, rgba(242, 140, 15, 0.15), transparent 65%);
   filter: blur(2px);
   opacity: 0.8;
   pointer-events: none;
@@ -67,7 +67,7 @@ body {
 }
 
 .hero-card {
-  background: linear-gradient(150deg, #1b2734, #111821);
+  background: linear-gradient(150deg, #ffffff, #f7f7f9);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px 18px;
@@ -93,8 +93,8 @@ body {
 }
 
 .hero-card .tag {
-  background: rgba(45, 212, 191, 0.18);
-  color: var(--accent-2);
+  background: rgba(242, 140, 15, 0.15);
+  color: #8a4b00;
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -115,7 +115,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 20px;
-  box-shadow: 0 18px 35px var(--shadow);
+  box-shadow: 0 16px 32px var(--shadow);
   display: grid;
   gap: 16px;
 }
@@ -152,7 +152,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: #fafafa;
   cursor: pointer;
 }
 
@@ -168,13 +168,13 @@ body {
 
 .drop-zone.drag {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(255, 138, 61, 0.15);
+  box-shadow: 0 0 0 2px rgba(242, 140, 15, 0.2);
 }
 
 .ghost {
   background: transparent;
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 61, 0.5);
+  border: 1px solid rgba(242, 140, 15, 0.45);
   border-radius: 999px;
   padding: 8px 14px;
   font-weight: 600;
@@ -188,8 +188,8 @@ body {
 }
 
 .primary {
-  background: var(--accent);
-  color: #121212;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #4a2b00;
   border: none;
   border-radius: 999px;
   padding: 10px 16px;
@@ -198,7 +198,7 @@ body {
 }
 
 .secondary {
-  background: #1b232f;
+  background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -222,7 +222,7 @@ body {
 
 .progress {
   height: 6px;
-  background: #1b2431;
+  background: #f0f2f5;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -264,7 +264,7 @@ body {
 .config input[type="text"] {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #0f151d;
+  background: #ffffff;
   color: var(--text);
   padding: 8px 10px;
   font-size: 13px;
@@ -296,7 +296,7 @@ textarea {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #0f151d;
+  background: #ffffff;
   color: var(--text);
   padding: 12px;
   font-size: 13px;
@@ -313,14 +313,14 @@ textarea {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #0f151d;
+  background: #ffffff;
 }
 
 .mapping-table {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #0f151d;
+  background: #ffffff;
 }
 
 .mapping-row {
@@ -337,7 +337,7 @@ textarea {
 }
 
 .mapping-header {
-  background: #16202c;
+  background: #f3f4f6;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -348,7 +348,7 @@ textarea {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0b1118;
+  background: #ffffff;
   color: var(--text);
   padding: 6px 8px;
   font-size: 13px;
@@ -356,7 +356,7 @@ textarea {
 
 .mapping-row button {
   background: transparent;
-  border: 1px solid rgba(255, 138, 61, 0.5);
+  border: 1px solid rgba(242, 140, 15, 0.45);
   color: var(--accent);
   border-radius: 999px;
   padding: 6px 10px;
@@ -373,14 +373,14 @@ table {
 thead th {
   position: sticky;
   top: 0;
-  background: #16202c;
+  background: #f3f4f6;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 thead .title-row {
-  background: #101824;
+  background: #f7f7f9;
   text-transform: none;
   letter-spacing: 0.02em;
   font-size: 14px;
@@ -388,7 +388,7 @@ thead .title-row {
 }
 
 thead .group-row {
-  background: #121c28;
+  background: #f7f7f9;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -403,7 +403,7 @@ th, td {
 }
 
 tbody tr.total {
-  background: rgba(255, 138, 61, 0.08);
+  background: rgba(242, 140, 15, 0.08);
   font-weight: 700;
 }
 

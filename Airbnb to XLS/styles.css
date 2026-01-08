@@ -1,12 +1,12 @@
 :root {
-  --bg: #f3efe6;
+  --bg: #f6f7f9;
   --card: #ffffff;
-  --ink: #161616;
-  --accent: #d26c2f;
-  --accent-dark: #a85326;
-  --muted: #5f5648;
-  --border: #e2d7c5;
-  --shadow: 0 18px 50px rgba(32, 26, 18, 0.12);
+  --ink: #3e3e3e;
+  --accent: #f28c0f;
+  --accent-dark: #d97900;
+  --muted: #6f6f6f;
+  --border: #e1e4ea;
+  --shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -15,9 +15,9 @@
 
 body {
   margin: 0;
-  font-family: "Fraunces", "Iowan Old Style", "Garamond", serif;
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at top, #fff7ee 0%, #f3efe6 55%, #efe5d6 100%);
+  background: radial-gradient(circle at top, #ffffff 0%, #f3f4f6 60%);
 }
 
 .wrap {
@@ -33,7 +33,7 @@ body {
   gap: 24px;
   padding: 28px;
   border: 1px solid var(--border);
-  background: linear-gradient(135deg, #fff6ea 0%, #f3eadb 60%, #ecd9c1 100%);
+  background: linear-gradient(150deg, #ffffff, #f7f7f9);
   box-shadow: var(--shadow);
   margin-bottom: 28px;
 }
@@ -73,7 +73,7 @@ h2 {
   border: 1px solid var(--border);
   padding: 22px;
   margin-bottom: 24px;
-  box-shadow: 0 12px 30px rgba(31, 28, 24, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .split {
@@ -92,11 +92,11 @@ h2 {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: #fffaf3;
+  background: #ffffff;
 }
 
 .action-card {
-  background: #fff;
+  background: #ffffff;
 }
 
 .subtle {
@@ -107,17 +107,17 @@ h2 {
 }
 
 .dropzone {
-  border: 2px dashed #d6c3a9;
+  border: 2px dashed var(--border);
   border-radius: 18px;
   padding: 22px;
-  background: #fffdf8;
+  background: #fafafa;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .dropzone.drag {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(210, 108, 47, 0.15);
+  box-shadow: 0 0 0 4px rgba(242, 140, 15, 0.2);
   transform: translateY(-1px);
 }
 
@@ -151,7 +151,7 @@ h2 {
 .progress-track {
   flex: 1;
   height: 8px;
-  background: #efe2d2;
+  background: #f0f2f5;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -186,13 +186,14 @@ button:hover {
 }
 
 button.primary {
-  background: var(--accent);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent), #f3a948);
+  color: #4a2b00;
   border-color: transparent;
+  box-shadow: 0 10px 22px rgba(242, 140, 15, 0.25);
 }
 
 button.ghost {
-  background: #f7efe5;
+  background: #f7f7f9;
 }
 
 button:disabled {
@@ -209,7 +210,7 @@ button:disabled {
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
-  background: #fff;
+  background: #ffffff;
 }
 
 .status {
@@ -244,6 +245,7 @@ button:disabled {
   border-collapse: collapse;
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 13px;
+  background: #ffffff;
 }
 
 #previewTable th,
@@ -264,7 +266,7 @@ button:disabled {
 #previewTable th.group-row {
   text-align: center;
   font-weight: 700;
-  background: #f7efe5;
+  background: #f4f5f7;
 }
 
 #previewTable th:first-child,
@@ -277,7 +279,7 @@ button:disabled {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(22, 16, 10, 0.55);
+  background: rgba(240, 242, 246, 0.8);
   display: none;
   align-items: center;
   justify-content: center;
@@ -294,7 +296,7 @@ button:disabled {
   width: min(980px, 100%);
   background: var(--card);
   border: 1px solid var(--border);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
   padding: 24px;
   display: grid;
   gap: 20px;
@@ -319,7 +321,7 @@ button:disabled {
 }
 
 code {
-  background: #f5eadb;
+  background: #f7f7f9;
   padding: 2px 6px;
   border-radius: 6px;
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -337,7 +339,7 @@ code {
   gap: 10px;
   align-items: center;
   padding: 10px;
-  background: #fff;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -368,6 +370,8 @@ code {
   border-radius: 8px;
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 13px;
+  background: #ffffff;
+  color: var(--ink);
 }
 
 .list-row select {
@@ -377,26 +381,28 @@ code {
   border-radius: 8px;
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   font-size: 13px;
-  background: #fff;
+  background: #ffffff;
+  color: var(--ink);
 }
 
 .col-key {
-  background: #faf4ec;
+  background: #f7f7f9;
 }
 
 .remove-btn {
   border-radius: 10px;
   border-color: transparent;
-  background: #f3e0cf;
+  background: #f7f7f9;
+  color: var(--ink);
 }
 
 .table-editable td[contenteditable="true"] {
-  background: #fff7ee;
+  background: #fff7ec;
   cursor: text;
 }
 
 .table-editable td[contenteditable="true"]:focus {
-  outline: 2px solid rgba(210, 108, 47, 0.35);
+  outline: 2px solid rgba(242, 140, 15, 0.4);
   outline-offset: -2px;
 }
 
