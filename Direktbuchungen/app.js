@@ -72,14 +72,15 @@ function updateFileList(files) {
 function normalize(text) {
   return String(text || "")
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/ß/g, "ss")
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/\s+/g, "")
-    .replace(/[.\-]/g, "")
+    .replace(/ue/g, "u")
+    .replace(/oe/g, "o")
+    .replace(/ae/g, "a")
     .replace(/strasse/g, "str")
-    .replace(/straße/g, "str");
+    .replace(/straße/g, "str")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function parseGermanFloat(value) {
@@ -257,6 +258,7 @@ async function extractLinesFromPdf(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const allLines = [];
+  let fullText = "";
 
   for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
     const page = await pdf.getPage(pageIndex);
@@ -292,6 +294,7 @@ async function extractLinesFromPdf(file) {
     }
 
     let pageText = lines.join("\n");
+    fullText += `${pageText}\n`;
     pageText = pageText.replace(/PrimeTimeSuite/g, "\nPrimeTimeSuite");
     pageText = pageText.replace(/Prime TimeSuite/g, "\nPrime TimeSuite");
 
@@ -303,15 +306,15 @@ async function extractLinesFromPdf(file) {
     allLines.push(...pageLines);
   }
 
-  return allLines;
+  return { lines: allLines, text: fullText };
 }
 
-function parseLines(lines) {
+function parseLines(lines, vatMode) {
   const bookings = [];
-  let totalCleaningNetto = 0;
+  let totalCleaningValue = 0;
   let cleaningVatRate = 0;
   let singleEndbetrag = 0;
-  let singleReinigungBrutto = 0;
+  let singleReinigungValue = 0;
   let singleSteuer = 0;
 
   lines.forEach((line) => {
@@ -338,7 +341,7 @@ function parseLines(lines) {
       const values = amounts.map((amount) => parseGermanFloat(amount)).filter((val) => val > 0);
       if (values.length) {
         const lineCleaningTotal = Math.max(...values);
-        totalCleaningNetto += lineCleaningTotal;
+        totalCleaningValue += lineCleaningTotal;
         const pctMatch = line.match(/(\d{1,2}(?:,\d{1,2})?)\s*%/);
         if (pctMatch) {
           cleaningVatRate = parseGermanFloat(pctMatch[1]);
@@ -346,7 +349,11 @@ function parseLines(lines) {
         if (cleaningVatRate === 0) {
           cleaningVatRate = 19;
         }
-        singleReinigungBrutto = lineCleaningTotal * (1 + cleaningVatRate / 100);
+        if (vatMode === "netto") {
+          singleReinigungValue = lineCleaningTotal * (1 + cleaningVatRate / 100);
+        } else {
+          singleReinigungValue = lineCleaningTotal;
+        }
       }
     }
 
@@ -365,24 +372,26 @@ function parseLines(lines) {
   if (numBookings <= 1) {
     const finalAddress = numBookings === 1 ? bookings[0].street : "Unbekannt";
     if (singleEndbetrag === 0 && numBookings === 1) {
-      singleEndbetrag =
-        bookings[0].netto * 1.07 + singleReinigungBrutto + singleSteuer;
+      const rentGross = bookings[0].netto * (vatMode === "netto" ? 1.07 : 1.0);
+      singleEndbetrag = rentGross + singleReinigungValue + singleSteuer;
     }
     const bruttoEinkuenfte = singleEndbetrag - singleSteuer;
     extracted.push({
       street: finalAddress,
       brutto: bruttoEinkuenfte,
-      reinigung: singleReinigungBrutto
+      reinigung: singleReinigungValue
     });
   } else {
     if (cleaningVatRate === 0) {
       cleaningVatRate = 19;
     }
     const totalCleaningBrutto =
-      totalCleaningNetto * (1 + cleaningVatRate / 100);
+      vatMode === "netto"
+        ? totalCleaningValue * (1 + cleaningVatRate / 100)
+        : totalCleaningValue;
     const cleaningPerBooking = totalCleaningBrutto / numBookings;
     bookings.forEach((booking) => {
-      const rentGross = booking.netto * 1.07;
+      const rentGross = booking.netto * (vatMode === "netto" ? 1.07 : 1.0);
       const revenueGross = rentGross + cleaningPerBooking;
       extracted.push({
         street: booking.street,
@@ -538,8 +547,11 @@ async function buildPreview() {
 
   for (let i = 0; i < files.length; i += 1) {
     const file = files[i];
-    const lines = await extractLinesFromPdf(file);
-    const extracted = parseLines(lines);
+    const { lines, text } = await extractLinesFromPdf(file);
+    const hasUstIncluded =
+      text.includes("USt. enthalten") || text.includes("USt enthalten");
+    const vatMode = hasUstIncluded ? "brutto" : "netto";
+    const extracted = parseLines(lines, vatMode);
     entries.push(...extracted);
     setProgress(Math.round(((i + 1) / files.length) * 100));
   }

@@ -1,5 +1,9 @@
 const frame = document.getElementById("appFrame");
 const buttons = document.querySelectorAll("button[data-target]");
+const welcome = document.getElementById("welcome");
+const menuToggle = document.getElementById("menuToggle");
+const menuPanel = document.getElementById("menuPanel");
+const menuClose = document.getElementById("menuClose");
 const loginGate = document.getElementById("loginGate");
 const loginForm = document.getElementById("loginForm");
 const loginId = document.getElementById("loginId");
@@ -17,10 +21,16 @@ const AUTH_KEY = "hub_auth";
 
 function setTarget(key) {
   frame.src = targets[key] || "";
-  buttons.forEach((btn) => {
-    btn.classList.toggle("primary", btn.dataset.target === key);
-    btn.classList.toggle("secondary", btn.dataset.target !== key);
-  });
+  frame.style.display = key ? "block" : "none";
+  if (welcome) {
+    welcome.style.display = key ? "none" : "flex";
+  }
+  if (menuToggle) {
+    menuToggle.classList.toggle("visible", Boolean(key));
+  }
+  if (menuPanel) {
+    menuPanel.classList.remove("show");
+  }
 }
 
 buttons.forEach((btn) => {
@@ -32,12 +42,20 @@ buttons.forEach((btn) => {
 function unlock() {
   document.body.classList.remove("locked");
   loginGate.style.display = "none";
+  setTarget("");
 }
 
 function lock() {
   document.body.classList.add("locked");
   loginGate.style.display = "flex";
   frame.src = "";
+  frame.style.display = "none";
+  if (welcome) {
+    welcome.style.display = "flex";
+  }
+  if (menuToggle) {
+    menuToggle.classList.remove("visible");
+  }
 }
 
 function checkStoredLogin() {
@@ -58,7 +76,6 @@ loginForm.addEventListener("submit", (event) => {
     sessionStorage.setItem(AUTH_KEY, "ok");
     loginError.textContent = "";
     unlock();
-    setTarget("airbnb");
   } else {
     loginError.textContent = "ID oder Passwort ist falsch.";
   }
@@ -70,7 +87,35 @@ if (logoutBtn) {
 
 if (checkStoredLogin()) {
   unlock();
-  setTarget("airbnb");
 } else {
   lock();
 }
+
+if (menuToggle && menuPanel) {
+  menuToggle.addEventListener("click", () => {
+    const isOpen = menuPanel.classList.toggle("show");
+    menuToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+}
+
+if (menuClose && menuPanel) {
+  menuClose.addEventListener("click", () => {
+    menuPanel.classList.remove("show");
+    menuToggle.setAttribute("aria-expanded", "false");
+  });
+}
+
+document.addEventListener("click", (event) => {
+  if (!menuPanel || !menuToggle) {
+    return;
+  }
+  const target = event.target;
+  if (
+    menuPanel.classList.contains("show") &&
+    !menuPanel.contains(target) &&
+    !menuToggle.contains(target)
+  ) {
+    menuPanel.classList.remove("show");
+    menuToggle.setAttribute("aria-expanded", "false");
+  }
+});

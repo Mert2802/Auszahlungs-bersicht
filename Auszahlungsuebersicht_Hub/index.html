@@ -32,17 +32,49 @@
       <h1>Auszahlungsuebersicht</h1>
       <p class="subtle">Waehle den Editor und arbeite im selben Tab.</p>
     </div>
-    <div class="actions">
-      <button class="primary" data-target="airbnb" type="button">Airbnb Editor</button>
-      <button class="secondary" data-target="booking" type="button">Booking Editor</button>
-      <button class="secondary" data-target="direkt" type="button">Direktbuchungen</button>
-      <button id="logoutBtn" class="danger" type="button">Logout</button>
-    </div>
+    <button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </header>
 
   <main class="hub-main">
+    <section id="welcome" class="welcome">
+      <div class="welcome-card">
+        <h2>Willkommen</h2>
+        <p>Waehle den Bereich, den du oeffnen moechtest.</p>
+        <div class="card-grid">
+          <button class="card" data-target="airbnb" type="button">
+            <h3>Airbnb Editor</h3>
+            <p>CSV Import, Mapping & XLSX Export</p>
+          </button>
+          <button class="card" data-target="booking" type="button">
+            <h3>Booking Editor</h3>
+            <p>Payout-Auswertung im Browser</p>
+          </button>
+          <button class="card" data-target="direkt" type="button">
+            <h3>Direktbuchungen</h3>
+            <p>PDF Analyse + XLSX Export</p>
+          </button>
+        </div>
+      </div>
+    </section>
     <iframe id="appFrame" title="Editor" src=""></iframe>
   </main>
+
+  <aside id="menuPanel" class="menu-panel" aria-hidden="true">
+    <div class="menu-header">
+      <h3>Navigation</h3>
+      <button id="menuClose" class="ghost" type="button">Schliessen</button>
+    </div>
+    <div class="menu-actions">
+      <button data-target="airbnb" type="button">Airbnb Editor</button>
+      <button data-target="booking" type="button">Booking Editor</button>
+      <button data-target="direkt" type="button">Direktbuchungen</button>
+      <button id="logoutBtn" class="danger" type="button">Logout</button>
+    </div>
+  </aside>
 
   <script src="hub.js"></script>
 </body>
