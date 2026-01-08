@@ -1,4 +1,4 @@
-const defaultMappingRules = [
+ï»¿const defaultMappingRules = [
   { match: "PrimeTime Suite f\u00fcr 8+K\u00fcche/WIFI", id: "00632" },
   { match: "PrimeTime: Suite f\u00fcr 2 + K\u00fcche", id: "00632" },
   { match: "PrimeTimeSuite:K\u00fcche+WiFi+Modern", id: "00632" },
@@ -67,7 +67,7 @@ const defaultColumns = [
     label: "SP5 Servicegeb\u00fchren",
     groupLabel: "SP5",
     type: "number",
-    formula: "-service",
+    formula: "-(service + adjustment_service)",
     enabled: true
   },
   {
@@ -249,6 +249,9 @@ function sanitizeColumns(columns) {
         };
         if (merged.key === "sp1" && merged.formula === "brutto") {
           merged.formula = "brutto + adjustment_service";
+        }
+        if (merged.key === "sp5" && merged.formula === "-service") {
+          merged.formula = "-(service + adjustment_service)";
         }
         if (merged.key === "sp6" && merged.formula === "sp1 + sp3 + sp5") {
           merged.formula = "payout";
@@ -581,7 +584,7 @@ function formatNumber(value) {
 
 function formatCurrency(value) {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return "€ 0,00";
+    return "ï¿½ 0,00";
   }
   return value.toLocaleString("de-DE", {
     style: "currency",
@@ -895,7 +898,7 @@ function buildStylesXml() {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">\n` +
     `<numFmts count="1">\n` +
-    `<numFmt numFmtId="164" formatCode="[$€-de-DE] #,##0.00"/>\n` +
+    `<numFmt numFmtId="164" formatCode="[$ï¿½-de-DE] #,##0.00"/>\n` +
     `</numFmts>\n` +
     `<fonts count="3">\n` +
     `<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>\n` +
@@ -1659,4 +1662,6 @@ enableDragList(streetList);
 enableDragList(columnList);
 
 loadStoredMappings();
+
+
 
