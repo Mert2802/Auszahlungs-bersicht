@@ -9,7 +9,8 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 const targets = {
   airbnb: "../Airbnb to XLS/index.html",
-  booking: "../Booking_Auszahlungsuebersicht_HTML/index.html"
+  booking: "../Booking_Auszahlungsuebersicht_HTML/index.html",
+  direkt: "../Direktbuchungen/index.html"
 };
 
 const AUTH_KEY = "hub_auth";
