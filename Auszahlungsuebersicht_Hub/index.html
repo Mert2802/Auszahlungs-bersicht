@@ -45,38 +45,37 @@
         <p>Waehle den Bereich, den du oeffnen moechtest.</p>
         <div class="dashboard">
           <div class="dashboard-controls">
-            <label for="periodSelect">Zeitraum</label>
-            <select id="periodSelect"></select>
-            <label for="systemSelect">Portal</label>
-            <select id="systemSelect">
-              <option value="Alle">Alle</option>
-              <option value="airbnb">Airbnb</option>
-              <option value="booking">Booking</option>
-              <option value="direkt">Direktbuchungen</option>
-            </select>
-            <button id="toggleBlurBtn" class="ghost icon" type="button" aria-pressed="false">👁</button>
-            <button id="clearSnapshotsBtn" class="ghost" type="button">Snapshots loeschen</button>
+            <button id="openFilterBtn" class="ghost" type="button">Filter</button>
+            <button id="openSnapshotsBtn" class="ghost" type="button">Snapshots</button>
+            <button id="toggleBlurBtn" class="ghost icon" type="button" aria-pressed="false">
+              <span class="icon-eye" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" focusable="false" aria-hidden="true">
+                  <path d="M12 5c-5.5 0-9.7 3.7-11 7 1.3 3.3 5.5 7 11 7s9.7-3.7 11-7c-1.3-3.3-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-2.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                </svg>
+              </span>
+              <span>Vorschau</span>
+            </button>
           </div>
           <div class="kpi-grid" id="kpiGrid">
             <div class="kpi-card" data-kpi="revenue">
               <span class="kpi-label">MTD Umsatz</span>
               <strong class="kpi-value" id="kpiRevenue">-</strong>
-              <span class="kpi-trend" id="kpiRevenueTrend">7T: - · 30T: -</span>
+              <span class="kpi-trend" id="kpiRevenueTrend">Vormonat: -</span>
             </div>
             <div class="kpi-card" data-kpi="fees">
               <span class="kpi-label">Servicegebuehren &amp; Anpassungen</span>
               <strong class="kpi-value" id="kpiFees">-</strong>
-              <span class="kpi-trend" id="kpiFeesTrend">7T: - · 30T: -</span>
+              <span class="kpi-trend" id="kpiFeesTrend">Vormonat: -</span>
             </div>
             <div class="kpi-card" data-kpi="tax">
               <span class="kpi-label">Beherbergungssteuer</span>
               <strong class="kpi-value" id="kpiTax">-</strong>
-              <span class="kpi-trend" id="kpiTaxTrend">7T: - · 30T: -</span>
+              <span class="kpi-trend" id="kpiTaxTrend">Vormonat: -</span>
             </div>
             <div class="kpi-card" data-kpi="payout">
               <span class="kpi-label">Nettoauszahlung</span>
               <strong class="kpi-value" id="kpiPayout">-</strong>
-              <span class="kpi-trend" id="kpiPayoutTrend">7T: - · 30T: -</span>
+              <span class="kpi-trend" id="kpiPayoutTrend">Vormonat: -</span>
             </div>
           </div>
           <div class="kpi-meta">
@@ -96,11 +95,84 @@
             <h3>Direktbuchungen</h3>
             <p>PDF Analyse + XLSX Export</p>
           </button>
+          <button class="card" data-target="miete" type="button">
+            <h3>Mieteingangskontrolle</h3>
+            <p>Kontoauszug Analyse + EUER Export</p>
+          </button>
         </div>
       </div>
     </section>
     <iframe id="appFrame" title="Editor" src=""></iframe>
   </main>
+
+  <div id="filterOverlay" class="overlay" aria-hidden="true">
+    <div class="overlay-card" role="dialog" aria-modal="true">
+      <div class="overlay-header">
+        <div>
+          <p class="eyebrow">Filter</p>
+          <h2>Zeitraum &amp; Portal</h2>
+          <p class="subtle">Waehle, welche Snapshots im Dashboard zaehlen.</p>
+        </div>
+        <button id="closeFilterBtn" class="icon-button" aria-label="Schliessen">x</button>
+      </div>
+      <div class="overlay-body">
+        <div class="filter-grid">
+          <label>
+            Zeitraum
+            <select id="periodSelect"></select>
+          </label>
+          <label>
+            Portal
+            <div id="systemOptions" class="portal-options">
+              <label><input type="checkbox" value="Alle" checked>Alle</label>
+              <label><input type="checkbox" value="airbnb">Airbnb</label>
+              <label><input type="checkbox" value="booking">Booking</label>
+              <label><input type="checkbox" value="direkt">Direktbuchungen</label>
+              <label><input type="checkbox" value="miete">Mieteingangskontrolle</label>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="overlay-footer">
+        <button id="closeFilterBtnFooter">Schliessen</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="snapshotsOverlay" class="overlay" aria-hidden="true">
+    <div class="overlay-card" role="dialog" aria-modal="true">
+      <div class="overlay-header">
+        <div>
+          <p class="eyebrow">Snapshots</p>
+          <h2>Eintraege verwalten</h2>
+          <p class="subtle">Filtern und einzelne Snapshots loeschen.</p>
+        </div>
+        <button id="closeSnapshotsBtn" class="icon-button" aria-label="Schliessen">x</button>
+      </div>
+      <div class="overlay-body">
+        <div class="filter-grid">
+          <label>
+            Zeitraum
+            <select id="snapshotPeriodSelect"></select>
+          </label>
+          <label>
+            Portal
+            <select id="snapshotSystemSelect">
+              <option value="Alle">Alle</option>
+              <option value="airbnb">Airbnb</option>
+              <option value="booking">Booking</option>
+              <option value="direkt">Direktbuchungen</option>
+              <option value="miete">Mieteingangskontrolle</option>
+            </select>
+          </label>
+        </div>
+        <div id="snapshotListModal" class="snapshot-list"></div>
+      </div>
+      <div class="overlay-footer">
+        <button id="closeSnapshotsBtnFooter">Schliessen</button>
+      </div>
+    </div>
+  </div>
 
   <aside id="menuPanel" class="menu-panel" aria-hidden="true">
     <div class="menu-header">
@@ -111,6 +183,7 @@
       <button data-target="airbnb" type="button">Airbnb Editor</button>
       <button data-target="booking" type="button">Booking Editor</button>
       <button data-target="direkt" type="button">Direktbuchungen</button>
+      <button data-target="miete" type="button">Mieteingangskontrolle</button>
       <button id="logoutBtn" class="danger" type="button">Logout</button>
     </div>
   </aside>

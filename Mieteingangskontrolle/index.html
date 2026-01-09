@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mieteingangskontrolle</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Mieteingangskontrolle</h1>
+      <div class="header-actions">
+        <button id="openSettingsBtn" class="ghost" type="button">Einstellungen</button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="card">
+        <div class="card-header">
+          <h2>CSV Import (Sparkasse CAMT V8)</h2>
+          <div class="card-actions">
+            <label class="file-button">
+              CSV auswaehlen
+              <input id="csvInput" type="file" accept=".csv,.CSV">
+            </label>
+            <select id="monthSelect" class="select" disabled>
+              <option value="">Zeitraum</option>
+            </select>
+            <select id="accountSelect" class="select" disabled>
+              <option value="">Konto</option>
+            </select>
+            <button id="exportEurBtn" class="ghost" type="button" disabled>EUER exportieren</button>
+            <button id="exportEurXlsBtn" class="ghost" type="button" disabled>EUER Excel</button>
+            <button id="clearImportsBtn" class="ghost" type="button">Imports loeschen</button>
+            <button id="snapshotBtn" class="ghost" type="button" disabled>Snapshot speichern</button>
+          </div>
+        </div>
+        <p id="snapshotStatus" class="muted"></p>
+        <p class="muted">
+          Lade einen Kontoauszug (CSV) hoch. Die Mieterliste und Regeln lassen sich unter Einstellungen pflegen.
+        </p>
+        <div class="stats-grid">
+          <div class="stat">
+            <span class="label">Gesamt Einnahmen</span>
+            <strong id="statIncome">-</strong>
+          </div>
+          <div class="stat">
+            <span class="label">Erwartete Miete</span>
+            <strong id="statExpected">-</strong>
+          </div>
+          <div class="stat">
+            <span class="label">Fehlend</span>
+            <strong id="statMissing">-</strong>
+          </div>
+          <div class="stat">
+            <span class="label">Teilzahlungen</span>
+            <strong id="statPartial">-</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Mieterliste & Status</h2>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="tenantTable">
+            <thead>
+              <tr>
+                <th>Mieter</th>
+                <th>Objekt</th>
+                <th>Monatsmiete</th>
+                <th>Faellig</th>
+                <th>Geldeingang</th>
+                <th>Eingang</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Unzugeordnete Einnahmen</h2>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="unmatchedTable">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Text</th>
+                <th>Empfaenger</th>
+                <th>Betrag</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="settingsOverlay" class="overlay" aria-hidden="true">
+      <div class="overlay-card" role="dialog" aria-modal="true">
+        <div class="overlay-header">
+          <div>
+            <p class="eyebrow">Einstellungen</p>
+            <h2>Mieter & Regeln</h2>
+            <p class="muted">Werte werden lokal im Browser gespeichert.</p>
+          </div>
+          <button id="closeSettingsBtn" class="icon-button" aria-label="Schliessen">x</button>
+        </div>
+        <div class="overlay-body">
+          <div class="settings-grid">
+            <label>
+              Toleranzbetrag (EUR)
+              <input id="toleranceInput" type="number" step="0.01" min="0">
+            </label>
+            <label>
+              Zahlungsfenster von Tag
+              <input id="windowStartInput" type="number" min="1" max="31">
+            </label>
+            <label>
+              bis Tag
+              <input id="windowEndInput" type="number" min="1" max="31">
+            </label>
+            <label class="checkbox">
+              <input id="allowPartialInput" type="checkbox">
+              Teilzahlungen erlauben
+            </label>
+          </div>
+          <div class="backup-row">
+            <div>
+              <p class="backup-label">Auto-Backup</p>
+              <p id="backupStatus" class="muted">Kein Speicherort gewaehlt.</p>
+            </div>
+            <div class="backup-actions">
+              <button id="backupSelectBtn" class="ghost" type="button">Speicherort waehlen</button>
+              <button id="backupNowBtn" class="ghost" type="button">Backup jetzt</button>
+            </div>
+          </div>
+
+          <div class="settings-header">
+            <h3>Mieterliste</h3>
+            <button id="addTenantBtn" class="ghost" type="button">Mieter hinzufuegen</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table" id="settingsTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Objekt</th>
+                  <th>Miete</th>
+                  <th>Faelligkeit</th>
+                  <th>IBAN</th>
+                  <th>Aktion</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="settings-header">
+            <h3>Konten</h3>
+            <button id="addAccountBtn" class="ghost" type="button">Konto hinzufuegen</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table" id="accountsTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>IBAN</th>
+                  <th>Aktion</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="overlay-footer">
+          <button id="saveSettingsBtn" class="primary" type="button">Speichern</button>
+          <button id="closeSettingsBtnFooter" type="button">Schliessen</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="lib/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
