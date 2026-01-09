@@ -457,6 +457,8 @@ function buildTransactions(rows) {
   if (!rows[headerIndex]) return [];
   const headers = rows[headerIndex].map((header) => String(header || "").trim());
   const normalized = headers.map((header) => normalizeHeaderName(header));
+  const findIndexExact = (needle) =>
+    normalized.findIndex((header) => header === needle);
   const findIndex = (needles) => {
     const list = Array.isArray(needles) ? needles : [needles];
     return normalized.findIndex((header) =>
@@ -469,7 +471,12 @@ function buildTransactions(rows) {
   const idxPurpose = findIndex(["verwendungszweck"]);
   const idxPartner = findIndex(["beguenstigter", "zahlungspflichtiger", "empfaenger"]);
   const idxIban = findIndex(["kontonummer", "iban"]);
-  const idxAmount = findIndex(["betrag"]);
+  let idxAmount = findIndexExact("betrag");
+  if (idxAmount === -1) {
+    idxAmount = normalized.findIndex(
+      (header) => header.includes("betrag") && !header.includes("ursprungsbetrag")
+    );
+  }
   const dataRows = rows.slice(headerIndex + 1);
   return dataRows
     .map((row) => {
