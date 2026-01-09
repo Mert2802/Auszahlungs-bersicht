@@ -444,6 +444,16 @@ function buildTransactions(rows) {
   ) {
     headerIndex = 1;
   }
+  const headerProbe = rows.slice(headerIndex, headerIndex + 5);
+  const detectedIndex = headerProbe.findIndex((row) =>
+    row.some((cell) => {
+      const norm = normalizeHeaderName(cell);
+      return norm.includes("buchungstag") || norm.includes("valutadatum");
+    })
+  );
+  if (detectedIndex !== -1) {
+    headerIndex += detectedIndex;
+  }
   if (!rows[headerIndex]) return [];
   const headers = rows[headerIndex].map((header) => String(header || "").trim());
   const normalized = headers.map((header) => normalizeHeaderName(header));
