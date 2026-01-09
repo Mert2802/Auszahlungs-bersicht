@@ -100,6 +100,7 @@ const STORAGE_KEYS = {
   columns: "airbnbColumns",
   header: "airbnbHeaderConfig"
 };
+const DASHBOARD_KEY = "dashboard_snapshots_v1";
 
 const state = {
   rows: [],
@@ -121,6 +122,7 @@ const progressText = document.getElementById("progressText");
 
 const previewBtn = document.getElementById("previewBtn");
 const downloadBtn = document.getElementById("downloadBtn");
+const snapshotBtn = document.getElementById("snapshotBtn");
 const statusEl = document.getElementById("status");
 const previewTable = document.getElementById("previewTable");
 const tableHead = document.querySelector("#previewTable thead");
@@ -645,6 +647,57 @@ function renderTable(output) {
       return `<tr>${cells.join("")}</tr>`;
     })
     .join("");
+}
+
+function findColumnKey(output, matchers) {
+  const list = Array.isArray(matchers) ? matchers : [matchers];
+  const column = output.columns.find((col) =>
+    list.some((matcher) => matcher.test(col.label))
+  );
+  return column ? column.key : null;
+}
+
+function pushDashboardEntry(metrics) {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_KEY);
+    const history = raw ? JSON.parse(raw) : [];
+    const safe = Array.isArray(history) ? history : [];
+    safe.push({
+      system: "airbnb",
+      ts: Date.now(),
+      metrics
+    });
+    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(safe.slice(-200)));
+  } catch (error) {
+    // ignore storage errors
+  }
+}
+
+function updateDashboardFromOutput(output) {
+  if (!output || !output.rows || output.rows.length < 2) {
+    return;
+  }
+  const totalRow = output.rows[output.rows.length - 1];
+  const revenueKey = findColumnKey(output, [/\\bSP1\\b/i, /Brutto/i]);
+  const feesKey = findColumnKey(output, [/\\bSP3\\b/i, /Anpass/i]);
+  const serviceKey = findColumnKey(output, [/\\bSP5\\b/i, /Service/i]);
+  const taxKey =
+    findColumnKey(output, [/\\bSP7\\b/i, /5%/i, /von SP4/i]) ||
+    findColumnKey(output, [/Beherbergungssteuer/i]);
+  const payoutKey = findColumnKey(output, [/\\bSP6\\b/i, /Auszahlung/i]);
+  const revenue = Number(totalRow[revenueKey] || 0);
+  const adjustments = Math.abs(Number(totalRow[feesKey] || 0));
+  const services = Math.abs(Number(totalRow[serviceKey] || 0));
+  const fees = adjustments + services;
+  const tax = Number(totalRow[taxKey] || 0);
+  const payout = Number(totalRow[payoutKey] || 0);
+  pushDashboardEntry({
+    revenue,
+    fees,
+    tax,
+    payout,
+    period: state.header.titleLine2 || ""
+  });
 }
 
 function computeColumnWidths(columns) {
@@ -1501,6 +1554,9 @@ previewBtn.addEventListener("click", () => {
         state.columns
       );
       renderTable(state.output);
+      if (snapshotBtn) {
+        snapshotBtn.disabled = state.output.rows.length === 0;
+      }
       downloadBtn.disabled = state.output.rows.length === 0;
       setProgress(100);
       setStatus(`Fertig. ${state.output.rows.length} Zeilen erzeugt.`);
@@ -1522,6 +1578,36 @@ downloadBtn.addEventListener("click", () => {
   }
   downloadExcel(state.output);
 });
+
+if (snapshotBtn) {
+  snapshotBtn.addEventListener("click", () => {
+    if (!state.output.rows.length) {
+      setStatus("Bitte zuerst eine Vorschau erzeugen.");
+      return;
+    }
+    if (!state.header.titleLine2) {
+      setStatus("Bitte Titelzeile 2 (Zeitraum) setzen, bevor du speicherst.");
+      return;
+    }
+    updateDashboardFromOutput(state.output);
+    setStatus("Snapshot gespeichert.");
+  });
+}
+
+if (snapshotBtn) {
+  snapshotBtn.addEventListener("click", () => {
+    if (!state.output.rows.length) {
+      setStatus("Bitte zuerst eine Vorschau erzeugen.");
+      return;
+    }
+    if (!state.header.titleLine2) {
+      setStatus("Bitte Titelzeile 2 (Zeitraum) setzen, bevor du speicherst.");
+      return;
+    }
+    updateDashboardFromOutput(state.output);
+    setStatus("Snapshot gespeichert.");
+  });
+}
 
 tableBody.addEventListener(
   "blur",

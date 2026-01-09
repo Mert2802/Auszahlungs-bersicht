@@ -223,6 +223,100 @@ button.danger {
   color: var(--muted);
 }
 
+.dashboard {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.dashboard-controls select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.dashboard-controls select:focus-visible {
+  outline: 2px solid rgba(242, 140, 15, 0.4);
+  outline-offset: 2px;
+}
+
+.dashboard-controls .ghost {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.dashboard-controls .icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+
+.kpi-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.kpi-grid.blurred .kpi-value,
+.kpi-grid.blurred .kpi-trend {
+  filter: blur(6px);
+}
+
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(242, 140, 15, 0.4);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.1);
+}
+
+.kpi-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.kpi-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.kpi-trend {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.kpi-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .card-grid {
   display: grid;
   gap: 16px;

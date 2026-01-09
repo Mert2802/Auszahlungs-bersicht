@@ -6,6 +6,7 @@ const progressBar = document.getElementById("progressBar");
 const statusEl = document.getElementById("status");
 const previewBtn = document.getElementById("previewBtn");
 const downloadBtn = document.getElementById("downloadBtn");
+const snapshotBtn = document.getElementById("snapshotBtn");
 const mappingFile = document.getElementById("mappingFile");
 const mappingList = document.getElementById("mappingList");
 const applyMappingBtn = document.getElementById("applyMappingBtn");
@@ -40,6 +41,7 @@ const state = {
     showGroupRow: true
   }
 };
+const DASHBOARD_KEY = "dashboard_snapshots_v1";
 
 if (window.pdfjsLib) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
@@ -506,6 +508,52 @@ function renderTable(output) {
     .join("");
 }
 
+function findColumnKey(output, matchers) {
+  const list = Array.isArray(matchers) ? matchers : [matchers];
+  const column = output.columns.find((col) =>
+    list.some((matcher) => matcher.test(col.label))
+  );
+  return column ? column.key : null;
+}
+
+function pushDashboardEntry(metrics) {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_KEY);
+    const history = raw ? JSON.parse(raw) : [];
+    const safe = Array.isArray(history) ? history : [];
+    safe.push({
+      system: "direkt",
+      ts: Date.now(),
+      metrics
+    });
+    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(safe.slice(-200)));
+  } catch (error) {
+    // ignore storage errors
+  }
+}
+
+function updateDashboardFromOutput(output) {
+  if (!output || !output.rows || output.rows.length < 2) {
+    return;
+  }
+  const totalRow = output.rows[output.rows.length - 1];
+  const revenueKey = findColumnKey(output, [/\\bSP1\\b/i, /Brutto/i]) || "brutto";
+  const feesKey = findColumnKey(output, [/\\bSP5\\b/i, /Service/i]);
+  const taxKey =
+    findColumnKey(output, [/\\bSP4\\b/i, /5%/i, /von SP3/i]) || "steuer";
+  const revenue = Number(totalRow[revenueKey] || 0);
+  const fees = feesKey ? Math.abs(Number(totalRow[feesKey] || 0)) : 0;
+  const tax = Number(totalRow[taxKey] || 0);
+  const payout = revenue;
+  pushDashboardEntry({
+    revenue,
+    fees,
+    tax,
+    payout,
+    period: state.header.titleLine2 || ""
+  });
+}
+
 function buildGroupHeaderRow(columnsList) {
   const cells = [];
   let index = 0;
@@ -558,6 +606,9 @@ async function buildPreview() {
 
   state.output = buildOutput(entries);
   renderTable(state.output);
+  if (snapshotBtn) {
+    snapshotBtn.disabled = false;
+  }
   downloadBtn.disabled = state.output.rows.length === 0;
   previewBtn.disabled = false;
   setStatus(`Fertig. ${state.output.rows.length} Zeilen erzeugt.`);
@@ -998,6 +1049,21 @@ downloadBtn.addEventListener("click", () => {
   }
   downloadExcel(state.output);
 });
+
+if (snapshotBtn) {
+  snapshotBtn.addEventListener("click", () => {
+    if (!state.output.rows.length) {
+      setStatus("Bitte zuerst eine Vorschau erzeugen.");
+      return;
+    }
+    if (!state.header.titleLine2) {
+      setStatus("Bitte Titelzeile 2 (Zeitraum) setzen, bevor du speicherst.");
+      return;
+    }
+    updateDashboardFromOutput(state.output);
+    setStatus("Snapshot gespeichert.");
+  });
+}
 
 dropZone.addEventListener("click", () => {
   pdfInput.click();

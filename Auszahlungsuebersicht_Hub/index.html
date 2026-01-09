@@ -43,6 +43,46 @@
       <div class="welcome-card">
         <h2>Willkommen</h2>
         <p>Waehle den Bereich, den du oeffnen moechtest.</p>
+        <div class="dashboard">
+          <div class="dashboard-controls">
+            <label for="periodSelect">Zeitraum</label>
+            <select id="periodSelect"></select>
+            <label for="systemSelect">Portal</label>
+            <select id="systemSelect">
+              <option value="Alle">Alle</option>
+              <option value="airbnb">Airbnb</option>
+              <option value="booking">Booking</option>
+              <option value="direkt">Direktbuchungen</option>
+            </select>
+            <button id="toggleBlurBtn" class="ghost icon" type="button" aria-pressed="false">👁</button>
+            <button id="clearSnapshotsBtn" class="ghost" type="button">Snapshots loeschen</button>
+          </div>
+          <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card" data-kpi="revenue">
+              <span class="kpi-label">MTD Umsatz</span>
+              <strong class="kpi-value" id="kpiRevenue">-</strong>
+              <span class="kpi-trend" id="kpiRevenueTrend">7T: - · 30T: -</span>
+            </div>
+            <div class="kpi-card" data-kpi="fees">
+              <span class="kpi-label">Servicegebuehren &amp; Anpassungen</span>
+              <strong class="kpi-value" id="kpiFees">-</strong>
+              <span class="kpi-trend" id="kpiFeesTrend">7T: - · 30T: -</span>
+            </div>
+            <div class="kpi-card" data-kpi="tax">
+              <span class="kpi-label">Beherbergungssteuer</span>
+              <strong class="kpi-value" id="kpiTax">-</strong>
+              <span class="kpi-trend" id="kpiTaxTrend">7T: - · 30T: -</span>
+            </div>
+            <div class="kpi-card" data-kpi="payout">
+              <span class="kpi-label">Nettoauszahlung</span>
+              <strong class="kpi-value" id="kpiPayout">-</strong>
+              <span class="kpi-trend" id="kpiPayoutTrend">7T: - · 30T: -</span>
+            </div>
+          </div>
+          <div class="kpi-meta">
+            <span id="kpiUpdated">Keine Daten vorhanden.</span>
+          </div>
+        </div>
         <div class="card-grid">
           <button class="card" data-target="airbnb" type="button">
             <h3>Airbnb Editor</h3>

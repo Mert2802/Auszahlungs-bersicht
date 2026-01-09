@@ -48,6 +48,7 @@ const DEFAULT_HEADER = {
   titleLine2: "",
   showGroupRow: false
 };
+const DASHBOARD_KEY = "dashboard_snapshots_v1";
 
 const state = {
   bookingFile: null,
@@ -65,6 +66,7 @@ const els = {
   payoutFile: document.getElementById("payoutFile"),
   runBtn: document.getElementById("runBtn"),
   downloadBtn: document.getElementById("downloadBtn"),
+  snapshotBtn: document.getElementById("snapshotBtn"),
   status: document.getElementById("status"),
   mappingTableBody: document.querySelector("#mappingTable tbody"),
   addMappingRowBtn: document.getElementById("addMappingRowBtn"),
@@ -584,6 +586,72 @@ function renderResultTable(output) {
       tr.appendChild(td);
     });
     els.resultTableBody.appendChild(tr);
+  });
+}
+
+function findColumnKey(output, matchers) {
+  const list = Array.isArray(matchers) ? matchers : [matchers];
+  const column = output.columns.find((col) =>
+    list.some((matcher) => matcher.test(col.label))
+  );
+  return column ? column.key : null;
+}
+
+function findColumnKeyBySp(output, spLabel) {
+  const column = output.columns.find((col) =>
+    String(col.label || "").toUpperCase().includes(spLabel)
+  );
+  return column ? column.key : null;
+}
+
+function findColumnKeyByGroup(output, groupLabel) {
+  const column = output.columns.find((col) => col.groupLabel === groupLabel);
+  return column ? column.key : null;
+}
+
+function pushDashboardEntry(metrics) {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_KEY);
+    const history = raw ? JSON.parse(raw) : [];
+    const safe = Array.isArray(history) ? history : [];
+    safe.push({
+      system: "booking",
+      ts: Date.now(),
+      metrics
+    });
+    localStorage.setItem(DASHBOARD_KEY, JSON.stringify(safe.slice(-200)));
+  } catch (error) {
+    // ignore storage errors
+  }
+}
+
+function updateDashboardFromOutput(output) {
+  if (!output || !output.rows || output.rows.length < 2) {
+    return;
+  }
+  const totalRow = output.rows[output.rows.length - 1];
+  const revenueKey =
+    findColumnKeyByGroup(output, "SP6") ||
+    findColumnKeyBySp(output, "SP6") ||
+    findColumnKey(output, [/Bruttobetrag inkl/i, /inkl/i, /Beherbergungssteuer/i]);
+  const feesKey =
+    findColumnKeyBySp(output, "SP4") || findColumnKey(output, [/Service/i, /Kommission/i]);
+  const taxKey =
+    findColumnKeyBySp(output, "SP7") ||
+    findColumnKey(output, [/5%/i, /von SP3/i]) ||
+    findColumnKey(output, [/Beherbergungssteuer/i]);
+  const payoutKey =
+    findColumnKeyBySp(output, "SP5") || findColumnKey(output, [/Auszahlung/i]);
+  const revenue = Number(totalRow[revenueKey] || 0);
+  const fees = Math.abs(Number(totalRow[feesKey] || 0));
+  const tax = Number(totalRow[taxKey] || 0);
+  const payout = Number(totalRow[payoutKey] || 0);
+  pushDashboardEntry({
+    revenue,
+    fees,
+    tax,
+    payout,
+    period: state.header.titleLine2 || ""
   });
 }
 
@@ -1252,6 +1320,9 @@ els.runBtn.addEventListener("click", async () => {
     const payoutRows = parseCsv(payoutText, ",");
     state.output = computeResult(bookingRows, payoutRows);
     renderResultTable(state.output);
+    if (els.snapshotBtn) {
+      els.snapshotBtn.disabled = false;
+    }
     els.downloadBtn.disabled = false;
     setStatus(`Fertig. Zeilen: ${state.output.rows.length}`);
   } catch (err) {
@@ -1263,6 +1334,21 @@ els.downloadBtn.addEventListener("click", () => {
   if (!state.output || !state.output.rows.length) return;
   downloadExcel(state.output);
 });
+
+if (els.snapshotBtn) {
+  els.snapshotBtn.addEventListener("click", () => {
+    if (!state.output || !state.output.rows.length) {
+      setStatus("Bitte zuerst auswerten.", "error");
+      return;
+    }
+    if (!state.header.titleLine2) {
+      setStatus("Bitte Titelzeile 2 (Zeitraum) setzen, bevor du speicherst.", "error");
+      return;
+    }
+    updateDashboardFromOutput(state.output);
+    setStatus("Snapshot gespeichert.");
+  });
+}
 
 loadState();
 renderHeaderInputs();

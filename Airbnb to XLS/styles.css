@@ -196,6 +196,11 @@ button.ghost {
   background: #f7f7f9;
 }
 
+button.ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
