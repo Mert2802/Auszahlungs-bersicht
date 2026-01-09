@@ -352,3 +352,25 @@ select {
     justify-content: flex-start;
   }
 }
+
+@media (max-width: 600px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .overlay-card {
+    width: 96vw;
+    padding: 16px;
+  }
+}

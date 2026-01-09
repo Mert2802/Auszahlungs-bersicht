@@ -574,3 +574,34 @@ button.danger {
     top: 120px;
   }
 }
+
+@media (max-width: 700px) {
+  .hub-header {
+    padding: 6px 10px;
+  }
+
+  .logo {
+    height: 64px;
+  }
+
+  .dashboard-controls {
+    gap: 8px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .overlay-card {
+    width: 96vw;
+    padding: 16px;
+  }
+
+  #appFrame {
+    height: calc(100vh - 96px);
+  }
+}

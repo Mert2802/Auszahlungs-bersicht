@@ -39,6 +39,7 @@ const loginId = document.getElementById("loginId");
 const loginPw = document.getElementById("loginPw");
 const loginError = document.getElementById("loginError");
 const logoutBtn = document.getElementById("logoutBtn");
+const goDashboardBtn = document.getElementById("goDashboardBtn");
 
 const targets = {
   airbnb: "../Airbnb to XLS/index.html",
@@ -95,6 +96,12 @@ function checkStoredLogin() {
 function logout() {
   sessionStorage.removeItem(AUTH_KEY);
   loginError.textContent = "";
+  if (menuPanel) {
+    menuPanel.classList.remove("show");
+  }
+  if (menuToggle) {
+    menuToggle.setAttribute("aria-expanded", "false");
+  }
   lock();
 }
 
@@ -113,6 +120,12 @@ loginForm.addEventListener("submit", (event) => {
 
 if (logoutBtn) {
   logoutBtn.addEventListener("click", logout);
+}
+
+if (goDashboardBtn) {
+  goDashboardBtn.addEventListener("click", () => {
+    setTarget("");
+  });
 }
 
 if (checkStoredLogin()) {
