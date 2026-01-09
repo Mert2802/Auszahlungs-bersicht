@@ -449,11 +449,12 @@ function buildTransactions(rows) {
   const dataRows = rows.slice(1);
   return dataRows
     .map((row) => {
-      const date =
-        parseDate(row[idxDate]) || parseDate(row[idxBookingDate]);
+      const bookingDate = parseDate(row[idxBookingDate]);
+      const valueDate = parseDate(row[idxDate]);
+      const date = bookingDate || valueDate;
       return {
         date,
-        bookingDate: parseDate(row[idxBookingDate]),
+        bookingDate,
         text: row[idxText] || "",
         purpose: row[idxPurpose] || "",
         partner: row[idxPartner] || "",
