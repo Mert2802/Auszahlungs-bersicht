@@ -21,6 +21,19 @@ const tableBody = previewTable.querySelector("tbody");
 
 const MAPPING_KEY = "direktbuchungenMapping";
 const HEADER_KEY = "direktbuchungenHeader";
+const DASHBOARD_KEY = "dashboard_snapshots_v1";
+const SYSTEM_ID = "direkt";
+
+const firebase = window.firebaseServices || {};
+const {
+  auth,
+  db,
+  onAuthStateChanged,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} = firebase;
 
 const columns = [
   { key: "id", label: "BeherbergungsID", type: "text", groupLabel: "" },
@@ -41,7 +54,7 @@ const state = {
     showGroupRow: true
   }
 };
-const DASHBOARD_KEY = "dashboard_snapshots_v1";
+let currentUser = null;
 
 if (window.pdfjsLib) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
@@ -51,6 +64,61 @@ if (window.pdfjsLib) {
 function setStatus(message, tone = "") {
   statusEl.textContent = message;
   statusEl.dataset.tone = tone;
+}
+
+function getSystemDoc() {
+  if (!db || !currentUser) return null;
+  return doc(db, "users", currentUser.uid, "systems", SYSTEM_ID);
+}
+
+async function loadRemoteState() {
+  const ref = getSystemDoc();
+  if (!ref) return;
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  if (data && data.payload) {
+    applyStoragePayload(data.payload);
+  }
+}
+
+async function saveRemoteState() {
+  const ref = getSystemDoc();
+  if (!ref) return;
+  const payload = buildStoragePayload();
+  await setDoc(
+    ref,
+    { payload, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+let saveTimer = null;
+function scheduleRemoteSave() {
+  if (!currentUser) return;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  saveTimer = setTimeout(() => {
+    saveRemoteState().catch(() => {});
+  }, 350);
+}
+
+async function appendDashboardEntry(metrics) {
+  if (!db || !currentUser) return;
+  const ref = doc(db, "users", currentUser.uid, "dashboard", "summary");
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  const history = Array.isArray(data && data.snapshots) ? data.snapshots : [];
+  history.push({
+    system: SYSTEM_ID,
+    ts: Date.now(),
+    metrics
+  });
+  await setDoc(
+    ref,
+    { snapshots: history.slice(-200), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
 }
 
 function setProgress(percent) {
@@ -139,6 +207,7 @@ function setMapping(mapping) {
   state.mappingKeys = Object.keys(mapping).sort((a, b) => b.length - a.length);
   localStorage.setItem(MAPPING_KEY, JSON.stringify(mapping));
   renderMappingList(mapping);
+  scheduleRemoteSave();
 }
 
 function loadStoredMapping() {
@@ -164,6 +233,35 @@ function setHeaderConfig(config) {
   titleLine1Input.value = state.header.titleLine1;
   titleLine2Input.value = state.header.titleLine2;
   groupRowToggle.checked = state.header.showGroupRow;
+  scheduleRemoteSave();
+}
+
+function buildStoragePayload() {
+  return {
+    storage: {
+      [MAPPING_KEY]: localStorage.getItem(MAPPING_KEY) || "",
+      [HEADER_KEY]: localStorage.getItem(HEADER_KEY) || "",
+      [DASHBOARD_KEY]: localStorage.getItem(DASHBOARD_KEY) || ""
+    }
+  };
+}
+
+function applyStoragePayload(payload) {
+  if (!payload || !payload.storage) return;
+  Object.entries(payload.storage).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    localStorage.setItem(key, value);
+  });
+}
+
+async function loadServerState() {
+  await loadRemoteState();
+  loadStoredMapping();
+  loadStoredHeader();
+}
+
+async function saveServerState() {
+  await saveRemoteState();
 }
 
 function loadStoredHeader() {
@@ -530,6 +628,7 @@ function pushDashboardEntry(metrics) {
   } catch (error) {
     // ignore storage errors
   }
+  appendDashboardEntry(metrics).catch(() => {});
 }
 
 function updateDashboardFromOutput(output) {
@@ -1126,6 +1225,7 @@ resetMappingBtn.addEventListener("click", () => {
   state.mappingKeys = [];
   renderMappingList({});
   setStatus("Mapping zur\u00fcckgesetzt.");
+  scheduleRemoteSave();
 });
 
 addMappingBtn.addEventListener("click", () => {
@@ -1148,3 +1248,14 @@ groupRowToggle.addEventListener("change", handleHeaderChange);
 loadStoredMapping();
 loadStoredHeader();
 updateFileList(pdfInput.files);
+
+if (auth && onAuthStateChanged) {
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (!user) return;
+    await loadRemoteState();
+    loadStoredMapping();
+    loadStoredHeader();
+    updateFileList(pdfInput.files);
+  });
+}

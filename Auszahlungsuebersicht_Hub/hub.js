@@ -4,9 +4,9 @@ const welcome = document.getElementById("welcome");
 const menuToggle = document.getElementById("menuToggle");
 const menuPanel = document.getElementById("menuPanel");
 const menuClose = document.getElementById("menuClose");
-const DASHBOARD_KEY = "dashboard_snapshots_v1";
 const PERIOD_KEY = "dashboard_period";
 const SYSTEM_KEY = "dashboard_system";
+const ADMIN_CREDS_KEY = "admin_creds_v1";
 const dashboardEls = {
   revenue: document.getElementById("kpiRevenue"),
   fees: document.getElementById("kpiFees"),
@@ -16,10 +16,10 @@ const dashboardEls = {
   feesTrend: document.getElementById("kpiFeesTrend"),
   taxTrend: document.getElementById("kpiTaxTrend"),
   payoutTrend: document.getElementById("kpiPayoutTrend"),
-    updated: document.getElementById("kpiUpdated"),
-    periodSelect: document.getElementById("periodSelect"),
-    systemOptions: document.getElementById("systemOptions"),
-    toggleBlurBtn: document.getElementById("toggleBlurBtn"),
+  updated: document.getElementById("kpiUpdated"),
+  periodSelect: document.getElementById("periodSelect"),
+  systemOptions: document.getElementById("systemOptions"),
+  toggleBlurBtn: document.getElementById("toggleBlurBtn"),
   kpiGrid: document.getElementById("kpiGrid"),
   openFilterBtn: document.getElementById("openFilterBtn"),
   filterOverlay: document.getElementById("filterOverlay"),
@@ -38,8 +38,38 @@ const loginForm = document.getElementById("loginForm");
 const loginId = document.getElementById("loginId");
 const loginPw = document.getElementById("loginPw");
 const loginError = document.getElementById("loginError");
+const openAdminBtn = document.getElementById("openAdminBtn");
+const adminOverlay = document.getElementById("adminOverlay");
+const closeAdminBtn = document.getElementById("closeAdminBtn");
+const closeAdminBtnFooter = document.getElementById("closeAdminBtnFooter");
 const logoutBtn = document.getElementById("logoutBtn");
 const goDashboardBtn = document.getElementById("goDashboardBtn");
+const newUserName = document.getElementById("newUserName");
+const newUserPass = document.getElementById("newUserPass");
+const newUserAdmin = document.getElementById("newUserAdmin");
+const addUserBtn = document.getElementById("addUserBtn");
+const usersTable = document.querySelector("#usersTable tbody");
+const adminError = document.getElementById("adminError");
+
+const firebase = window.firebaseServices || {};
+const {
+  auth,
+  db,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  doc,
+  getDoc,
+  setDoc,
+  getDocs,
+  collection,
+  serverTimestamp
+} = firebase;
+
+let currentUser = null;
+let currentProfile = null;
+let dashboardHistory = [];
 
 const targets = {
   airbnb: "../Airbnb to XLS/index.html",
@@ -48,7 +78,35 @@ const targets = {
   miete: "../Mieteingangskontrolle/index.html"
 };
 
-const AUTH_KEY = "hub_auth";
+function toEmail(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return raw.includes("@") ? raw : `${raw}@cockpit.local`;
+}
+
+function usernameFromEmail(email) {
+  const raw = String(email || "");
+  return raw.includes("@") ? raw.split("@")[0] : raw;
+}
+
+function storeAdminCreds(email, password) {
+  if (!email || !password) return;
+  sessionStorage.setItem(ADMIN_CREDS_KEY, JSON.stringify({ email, password }));
+}
+
+function readAdminCreds() {
+  const raw = sessionStorage.getItem(ADMIN_CREDS_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function clearAdminCreds() {
+  sessionStorage.removeItem(ADMIN_CREDS_KEY);
+}
 
 function setTarget(key) {
   frame.src = targets[key] || "";
@@ -89,37 +147,184 @@ function lock() {
   }
 }
 
-function checkStoredLogin() {
-  return sessionStorage.getItem(AUTH_KEY) === "ok";
-}
-
-function logout() {
-  sessionStorage.removeItem(AUTH_KEY);
+async function logout() {
   loginError.textContent = "";
+  currentUser = null;
+  currentProfile = null;
+  dashboardHistory = [];
+  setAdminVisible(false);
+  closeAdmin();
   if (menuPanel) {
     menuPanel.classList.remove("show");
   }
   if (menuToggle) {
     menuToggle.setAttribute("aria-expanded", "false");
   }
+  clearAdminCreds();
+  if (auth) {
+    await signOut(auth);
+  }
   lock();
 }
 
-loginForm.addEventListener("submit", (event) => {
+function setAdminVisible(isAdmin) {
+  const blocks = document.querySelectorAll(".admin-only");
+  blocks.forEach((block) => block.classList.toggle("show", Boolean(isAdmin)));
+}
+
+function openAdmin() {
+  if (!adminOverlay) return;
+  if (!currentProfile || currentProfile.role !== "admin") return;
+  if (adminError) adminError.textContent = "";
+  adminOverlay.classList.add("show");
+  adminOverlay.setAttribute("aria-hidden", "false");
+  loadUsers();
+}
+
+function closeAdmin() {
+  if (!adminOverlay) return;
+  adminOverlay.classList.remove("show");
+  adminOverlay.setAttribute("aria-hidden", "true");
+}
+
+async function ensureUserProfile(user, usernameHint) {
+  if (!db || !user) return null;
+  const ref = doc(db, "users", user.uid);
+  const snapshot = await getDoc(ref);
+  if (snapshot.exists()) {
+    return snapshot.data();
+  }
+  const email = user.email || "";
+  const username = usernameHint || usernameFromEmail(email) || "user";
+  const role = username === "admin" ? "admin" : "user";
+  const profile = {
+    username,
+    role,
+    createdAt: serverTimestamp()
+  };
+  await setDoc(ref, profile, { merge: true });
+  return { ...profile };
+}
+
+function renderUsers(users) {
+  if (!usersTable) return;
+  usersTable.innerHTML = "";
+  if (!users.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td colspan=\"3\" class=\"muted\">Keine Benutzer.</td>";
+    usersTable.appendChild(tr);
+    return;
+  }
+  users.forEach((user) => {
+    const roleLabel =
+      user.role === "admin"
+        ? "Admin"
+        : user.role === "disabled"
+          ? "Deaktiviert"
+          : "Benutzer";
+    const tr = document.createElement("tr");
+    const disabled = currentUser && user.id === currentUser.uid;
+    tr.innerHTML = `
+      <td>${user.username || "-"}</td>
+      <td>${roleLabel}</td>
+      <td><button class="ghost" data-id="${user.id}" ${disabled ? "disabled" : ""}>Entfernen</button></td>
+    `;
+    const btn = tr.querySelector("button");
+    btn.addEventListener("click", async () => {
+      if (!confirm("Benutzer wirklich entfernen?")) return;
+      await setDoc(
+        doc(db, "users", user.id),
+        { role: "disabled", disabled: true, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+      loadUsers();
+    });
+    usersTable.appendChild(tr);
+  });
+}
+
+async function loadUsers() {
+  if (!db || !currentProfile || currentProfile.role !== "admin") return;
+  const snapshot = await getDocs(collection(db, "users"));
+  const users = snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data()
+  }));
+  renderUsers(users);
+}
+
+function dashboardDocRef() {
+  if (!currentUser || !db) return null;
+  return doc(db, "users", currentUser.uid, "dashboard", "summary");
+}
+
+async function loadDashboardHistory() {
+  const ref = dashboardDocRef();
+  if (!ref) {
+    dashboardHistory = [];
+    return;
+  }
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  dashboardHistory = Array.isArray(data && data.snapshots) ? data.snapshots : [];
+}
+
+async function saveDashboardHistory() {
+  const ref = dashboardDocRef();
+  if (!ref) return;
+  await setDoc(
+    ref,
+    { snapshots: dashboardHistory.slice(-200), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const id = loginId.value.trim();
   const pw = loginPw.value.trim();
-  if (id === "admin" && pw === "admin123") {
-    sessionStorage.setItem(AUTH_KEY, "ok");
+  const email = toEmail(id);
+  if (!email || !pw) {
+    loginError.textContent = "Bitte ID und Passwort eingeben.";
+    return;
+  }
+  if (!auth) {
+    loginError.textContent = "Firebase ist nicht geladen.";
+    return;
+  }
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+    storeAdminCreds(email, pw);
     loginError.textContent = "";
-    unlock();
-  } else {
+  } catch (error) {
     loginError.textContent = "ID oder Passwort ist falsch.";
   }
 });
 
 if (logoutBtn) {
-  logoutBtn.addEventListener("click", logout);
+  logoutBtn.addEventListener("click", () => {
+    logout();
+  });
+}
+
+if (openAdminBtn) {
+  openAdminBtn.addEventListener("click", openAdmin);
+}
+
+if (closeAdminBtn) {
+  closeAdminBtn.addEventListener("click", closeAdmin);
+}
+
+if (closeAdminBtnFooter) {
+  closeAdminBtnFooter.addEventListener("click", closeAdmin);
+}
+
+if (adminOverlay) {
+  adminOverlay.addEventListener("click", (event) => {
+    if (event.target === adminOverlay) {
+      closeAdmin();
+    }
+  });
 }
 
 if (goDashboardBtn) {
@@ -128,10 +333,66 @@ if (goDashboardBtn) {
   });
 }
 
-if (checkStoredLogin()) {
-  unlock();
-} else {
-  lock();
+if (addUserBtn) {
+  addUserBtn.addEventListener("click", async () => {
+    if (!currentProfile || currentProfile.role !== "admin") return;
+    const username = newUserName.value.trim();
+    const password = newUserPass.value.trim();
+    const isAdmin = newUserAdmin.checked;
+    const email = toEmail(username);
+    if (!email || !password) return;
+    if (adminError) adminError.textContent = "";
+    if (password.length < 6) {
+      if (adminError) {
+        adminError.textContent = "Passwort muss mindestens 6 Zeichen haben.";
+      }
+      return;
+    }
+    const adminCreds = readAdminCreds();
+    if (!adminCreds) {
+      if (adminError) {
+        adminError.textContent = "Bitte als Admin neu anmelden.";
+      }
+      return;
+    }
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      const newUser = auth.currentUser;
+      if (newUser) {
+        await setDoc(
+          doc(db, "users", newUser.uid),
+          {
+            username: usernameFromEmail(email),
+            role: isAdmin ? "admin" : "user",
+            createdAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+      }
+      await signOut(auth);
+      await signInWithEmailAndPassword(
+        auth,
+        adminCreds.email,
+        adminCreds.password
+      );
+      newUserName.value = "";
+      newUserPass.value = "";
+      newUserAdmin.checked = false;
+      if (adminError) adminError.textContent = "Benutzer angelegt.";
+      loadUsers();
+    } catch (error) {
+      if (adminError) {
+        const message = String(error && error.message ? error.message : "");
+        if (message.includes("email-already-in-use")) {
+          adminError.textContent = "Benutzername ist bereits vergeben.";
+        } else if (message.includes("invalid-email")) {
+          adminError.textContent = "Ung\u00fcltige E-Mail/Benutzername.";
+        } else {
+          adminError.textContent = "Benutzer konnte nicht angelegt werden.";
+        }
+      }
+    }
+  });
 }
 
 function formatCurrency(value) {
@@ -143,15 +404,8 @@ function formatCurrency(value) {
   }).format(value || 0);
 }
 
-
 function readDashboardHistory() {
-  try {
-    const raw = localStorage.getItem(DASHBOARD_KEY);
-    const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
-  } catch (error) {
-    return [];
-  }
+  return dashboardHistory;
 }
 
 function normalizePeriod(value) {
@@ -188,18 +442,6 @@ function normalizePeriod(value) {
     return `${mm}/${numericMatch[2]}`;
   }
   return raw;
-}
-
-function getLatestBySystem(history) {
-  const latest = new Map();
-  history.forEach((entry) => {
-    if (!entry || !entry.system || !entry.metrics) return;
-    const existing = latest.get(entry.system);
-    if (!existing || entry.ts > existing.ts) {
-      latest.set(entry.system, entry);
-    }
-  });
-  return Array.from(latest.values());
 }
 
 function isSystemMatch(systemFilter, systemValue) {
@@ -466,6 +708,14 @@ function renderDashboard() {
   if (!dashboardEls.revenue) return;
   const history = readDashboardHistory();
   if (!history.length) {
+    dashboardEls.revenue.textContent = "-";
+    dashboardEls.fees.textContent = "-";
+    dashboardEls.tax.textContent = "-";
+    dashboardEls.payout.textContent = "-";
+    dashboardEls.revenueTrend.textContent = "Vormonat: -";
+    dashboardEls.feesTrend.textContent = "Vormonat: -";
+    dashboardEls.taxTrend.textContent = "Vormonat: -";
+    dashboardEls.payoutTrend.textContent = "Vormonat: -";
     dashboardEls.updated.textContent = "Keine Daten vorhanden.";
     return;
   }
@@ -528,10 +778,7 @@ function renderDashboard() {
       : "";
   const systemText = systemLabelText ? ` | Portal: ${systemLabelText}` : "";
   dashboardEls.updated.textContent = `Zuletzt aktualisiert: ${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}${periodText}${systemText}`;
-
 }
-
-renderDashboard();
 
 if (dashboardEls.periodSelect) {
   dashboardEls.periodSelect.addEventListener("change", () => {
@@ -643,11 +890,10 @@ function renderSnapshotModal() {
         `<span class="muted">${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span>` +
         `<button type="button" class="ghost">L\u00f6schen</button>`;
       const btn = row.querySelector("button");
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const ok = window.confirm("Diesen Snapshot wirklich l\u00f6schen?");
         if (!ok) return;
-        const raw = readDashboardHistory();
-        const idx = raw.findIndex(
+        const idx = dashboardHistory.findIndex(
           (item) =>
             item &&
             item.ts === entry.ts &&
@@ -655,8 +901,8 @@ function renderSnapshotModal() {
             (item.metrics ? item.metrics.period : undefined) === rawPeriod
         );
         if (idx !== -1) {
-          raw.splice(idx, 1);
-          localStorage.setItem(DASHBOARD_KEY, JSON.stringify(raw));
+          dashboardHistory.splice(idx, 1);
+          await saveDashboardHistory();
         }
         renderDashboard();
         renderSnapshotModal();
@@ -734,3 +980,32 @@ document.addEventListener("click", (event) => {
     menuToggle.setAttribute("aria-expanded", "false");
   }
 });
+
+if (auth && onAuthStateChanged) {
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (!user) {
+      currentProfile = null;
+      setAdminVisible(false);
+      closeAdmin();
+      dashboardHistory = [];
+      renderDashboard();
+      lock();
+      return;
+    }
+    const profile = await ensureUserProfile(user, usernameFromEmail(user.email));
+    if (profile && profile.role === "disabled") {
+      loginError.textContent = "Konto deaktiviert.";
+      await signOut(auth);
+      return;
+    }
+    currentProfile = profile;
+    setAdminVisible(profile && profile.role === "admin");
+    unlock();
+    await loadDashboardHistory();
+    renderDashboard();
+    loadUsers();
+  });
+} else {
+  lock();
+}

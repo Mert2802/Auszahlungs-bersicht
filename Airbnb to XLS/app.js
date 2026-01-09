@@ -101,6 +101,18 @@ const STORAGE_KEYS = {
   header: "airbnbHeaderConfig"
 };
 const DASHBOARD_KEY = "dashboard_snapshots_v1";
+const SYSTEM_ID = "airbnb";
+
+const firebase = window.firebaseServices || {};
+const {
+  auth,
+  db,
+  onAuthStateChanged,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} = firebase;
 
 const state = {
   rows: [],
@@ -144,9 +156,67 @@ const ruleList = document.getElementById("ruleList");
 const streetList = document.getElementById("streetList");
 const columnList = document.getElementById("columnList");
 
+let currentUser = null;
+
 function setStatus(message, tone = "") {
   statusEl.textContent = message;
   statusEl.dataset.tone = tone;
+}
+
+function getSystemDoc() {
+  if (!db || !currentUser) return null;
+  return doc(db, "users", currentUser.uid, "systems", SYSTEM_ID);
+}
+
+async function loadRemoteState() {
+  const ref = getSystemDoc();
+  if (!ref) return;
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  if (data && data.payload) {
+    applyStoragePayload(data.payload);
+  }
+  loadStoredMappings();
+}
+
+async function saveRemoteState() {
+  const ref = getSystemDoc();
+  if (!ref) return;
+  const payload = buildStoragePayload();
+  await setDoc(
+    ref,
+    { payload, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+let saveTimer = null;
+function scheduleRemoteSave() {
+  if (!currentUser) return;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  saveTimer = setTimeout(() => {
+    saveRemoteState().catch(() => {});
+  }, 350);
+}
+
+async function appendDashboardEntry(metrics) {
+  if (!db || !currentUser) return;
+  const ref = doc(db, "users", currentUser.uid, "dashboard", "summary");
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  const history = Array.isArray(data && data.snapshots) ? data.snapshots : [];
+  history.push({
+    system: SYSTEM_ID,
+    ts: Date.now(),
+    metrics
+  });
+  await setDoc(
+    ref,
+    { snapshots: history.slice(-200), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
 }
 
 function setProgress(percent) {
@@ -229,6 +299,35 @@ function saveStoredMappings() {
   localStorage.setItem(STORAGE_KEYS.streets, JSON.stringify(state.mappings.streets));
   localStorage.setItem(STORAGE_KEYS.columns, JSON.stringify(state.columns));
   localStorage.setItem(STORAGE_KEYS.header, JSON.stringify(state.header));
+  scheduleRemoteSave();
+}
+
+function buildStoragePayload() {
+  return {
+    storage: {
+      [STORAGE_KEYS.rules]: localStorage.getItem(STORAGE_KEYS.rules) || "",
+      [STORAGE_KEYS.streets]: localStorage.getItem(STORAGE_KEYS.streets) || "",
+      [STORAGE_KEYS.columns]: localStorage.getItem(STORAGE_KEYS.columns) || "",
+      [STORAGE_KEYS.header]: localStorage.getItem(STORAGE_KEYS.header) || "",
+      [DASHBOARD_KEY]: localStorage.getItem(DASHBOARD_KEY) || ""
+    }
+  };
+}
+
+function applyStoragePayload(payload) {
+  if (!payload || !payload.storage) return;
+  Object.entries(payload.storage).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    localStorage.setItem(key, value);
+  });
+}
+
+async function loadServerState() {
+  await loadRemoteState();
+}
+
+async function saveServerState() {
+  await saveRemoteState();
 }
 
 function sanitizeColumns(columns) {
@@ -671,6 +770,7 @@ function pushDashboardEntry(metrics) {
   } catch (error) {
     // ignore storage errors
   }
+  appendDashboardEntry(metrics).catch(() => {});
 }
 
 function updateDashboardFromOutput(output) {
@@ -1748,6 +1848,13 @@ enableDragList(streetList);
 enableDragList(columnList);
 
 loadStoredMappings();
+if (auth && onAuthStateChanged) {
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (!user) return;
+    await loadRemoteState();
+  });
+}
 
 
 

@@ -49,6 +49,18 @@ const DEFAULT_HEADER = {
   showGroupRow: false
 };
 const DASHBOARD_KEY = "dashboard_snapshots_v1";
+const SYSTEM_ID = "booking";
+
+const firebase = window.firebaseServices || {};
+const {
+  auth,
+  db,
+  onAuthStateChanged,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} = firebase;
 
 const state = {
   bookingFile: null,
@@ -60,6 +72,8 @@ const state = {
   header: { ...DEFAULT_HEADER },
   output: null
 };
+
+let currentUser = null;
 
 const els = {
   bookingFile: document.getElementById("bookingFile"),
@@ -90,6 +104,62 @@ const els = {
   closeOverlayBtnFooter: document.getElementById("closeOverlayBtnFooter")
 };
 
+function getSystemDoc() {
+  if (!db || !currentUser) return null;
+  return doc(db, "users", currentUser.uid, "systems", SYSTEM_ID);
+}
+
+async function loadRemoteState() {
+  const ref = getSystemDoc();
+  if (!ref) return;
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  if (data && data.payload) {
+    applyStoragePayload(data.payload);
+  }
+  loadState();
+}
+
+async function saveRemoteState() {
+  const ref = getSystemDoc();
+  if (!ref) return;
+  const payload = buildStoragePayload();
+  await setDoc(
+    ref,
+    { payload, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+let saveTimer = null;
+function scheduleRemoteSave() {
+  if (!currentUser) return;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  saveTimer = setTimeout(() => {
+    saveRemoteState().catch(() => {});
+  }, 350);
+}
+
+async function appendDashboardEntry(metrics) {
+  if (!db || !currentUser) return;
+  const ref = doc(db, "users", currentUser.uid, "dashboard", "summary");
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  const history = Array.isArray(data && data.snapshots) ? data.snapshots : [];
+  history.push({
+    system: SYSTEM_ID,
+    ts: Date.now(),
+    metrics
+  });
+  await setDoc(
+    ref,
+    { snapshots: history.slice(-200), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
 function loadState() {
   const mappingRaw = localStorage.getItem("booking_mapping");
   const renamesRaw = localStorage.getItem("booking_renames");
@@ -107,22 +177,56 @@ function loadState() {
 
 function saveMapping() {
   localStorage.setItem("booking_mapping", JSON.stringify(state.mapping));
+  scheduleRemoteSave();
 }
 
 function saveRenames() {
   localStorage.setItem("booking_renames", JSON.stringify(state.renames));
+  scheduleRemoteSave();
 }
 
 function saveGroupLabels() {
   localStorage.setItem("booking_groups", JSON.stringify(state.groupLabels));
+  scheduleRemoteSave();
 }
 
 function saveColumnOrder() {
   localStorage.setItem("booking_column_order", JSON.stringify(state.columnOrder));
+  scheduleRemoteSave();
 }
 
 function saveHeader() {
   localStorage.setItem("booking_header", JSON.stringify(state.header));
+  scheduleRemoteSave();
+}
+
+function buildStoragePayload() {
+  return {
+    storage: {
+      booking_mapping: localStorage.getItem("booking_mapping") || "",
+      booking_renames: localStorage.getItem("booking_renames") || "",
+      booking_groups: localStorage.getItem("booking_groups") || "",
+      booking_column_order: localStorage.getItem("booking_column_order") || "",
+      booking_header: localStorage.getItem("booking_header") || "",
+      [DASHBOARD_KEY]: localStorage.getItem(DASHBOARD_KEY) || ""
+    }
+  };
+}
+
+function applyStoragePayload(payload) {
+  if (!payload || !payload.storage) return;
+  Object.entries(payload.storage).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    localStorage.setItem(key, value);
+  });
+}
+
+async function loadServerState() {
+  await loadRemoteState();
+}
+
+async function saveServerState() {
+  await saveRemoteState();
 }
 
 function renderHeaderInputs() {
@@ -623,6 +727,7 @@ function pushDashboardEntry(metrics) {
   } catch (error) {
     // ignore storage errors
   }
+  appendDashboardEntry(metrics).catch(() => {});
 }
 
 function updateDashboardFromOutput(output) {
@@ -1350,8 +1455,21 @@ if (els.snapshotBtn) {
   });
 }
 
+function finishInit() {
+  renderHeaderInputs();
+  renderMappingTable();
+  renderRenamesTable();
+  wireDropZones();
+}
+
 loadState();
-renderHeaderInputs();
-renderMappingTable();
-renderRenamesTable();
-wireDropZones();
+finishInit();
+
+if (auth && onAuthStateChanged) {
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (!user) return;
+    await loadRemoteState();
+    finishInit();
+  });
+}

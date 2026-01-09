@@ -60,11 +60,32 @@ const els = {
   allowPartialInput: document.getElementById("allowPartialInput"),
   backupStatus: document.getElementById("backupStatus"),
   backupSelectBtn: document.getElementById("backupSelectBtn"),
-  backupNowBtn: document.getElementById("backupNowBtn")
+  backupNowBtn: document.getElementById("backupNowBtn"),
+  authOverlay: document.getElementById("authOverlay"),
+  loginUser: document.getElementById("loginUser"),
+  loginPass: document.getElementById("loginPass"),
+  loginBtn: document.getElementById("loginBtn"),
+  loginError: document.getElementById("loginError")
 };
 
 let settings = loadSettings();
 let transactions = [];
+let currentUser = null;
+let currentProfile = null;
+let remoteLoaded = false;
+
+const firebase = window.firebaseServices || {};
+const {
+  auth,
+  db,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} = firebase;
 
 function loadSettings() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -167,11 +188,112 @@ async function readBackup(handle) {
 async function updateBackupStatus(handle) {
   if (!els.backupStatus) return;
   if (!handle) {
-  els.backupStatus.textContent = "Kein Speicherort gew\u00e4hlt.";
+    els.backupStatus.textContent = "Kein Speicherort gew\u00e4hlt.";
     return;
   }
   els.backupStatus.textContent = "Auto-Backup aktiv.";
 }
+
+function toEmail(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return raw.includes("@") ? raw : `${raw}@cockpit.local`;
+}
+
+function usernameFromEmail(email) {
+  const raw = String(email || "");
+  return raw.includes("@") ? raw.split("@")[0] : raw;
+}
+
+async function ensureUserProfile(user) {
+  if (!db || !user) return null;
+  const ref = doc(db, "users", user.uid);
+  const snapshot = await getDoc(ref);
+  if (snapshot.exists()) {
+    return snapshot.data();
+  }
+  const username = usernameFromEmail(user.email) || "user";
+  const role = username === "admin" ? "admin" : "user";
+  const profile = {
+    username,
+    role,
+    createdAt: serverTimestamp()
+  };
+  await setDoc(ref, profile, { merge: true });
+  return { ...profile };
+}
+
+function buildRemotePayload() {
+  return {
+    settings,
+    month: els.monthSelect ? els.monthSelect.value : "",
+    account: els.accountSelect ? els.accountSelect.value : "",
+    transactions: serializeTransactions(transactions)
+  };
+}
+
+async function saveRemoteData() {
+  if (!currentUser || !db) return;
+  const ref = doc(db, "users", currentUser.uid, "systems", "miete");
+  await setDoc(
+    ref,
+    { payload: buildRemotePayload(), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+let saveTimer = null;
+function scheduleRemoteSave() {
+  if (!currentUser || !db) return;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+  }
+  saveTimer = setTimeout(() => {
+    saveRemoteData().catch(() => {});
+  }, 400);
+}
+
+async function loadRemoteData() {
+  if (!currentUser || !db) return;
+  const ref = doc(db, "users", currentUser.uid, "systems", "miete");
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  if (data && data.payload) {
+    applyPayload(data.payload);
+    remoteLoaded = true;
+  }
+}
+
+async function appendDashboardEntry(metrics) {
+  if (!currentUser || !db) return;
+  const ref = doc(db, "users", currentUser.uid, "dashboard", "summary");
+  const snapshot = await getDoc(ref);
+  const data = snapshot.exists() ? snapshot.data() : null;
+  const history = Array.isArray(data && data.snapshots) ? data.snapshots : [];
+  history.push({
+    system: "miete",
+    ts: Date.now(),
+    metrics
+  });
+  await setDoc(
+    ref,
+    { snapshots: history.slice(-200), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+function showAuthOverlay() {
+  if (!els.authOverlay) return;
+  els.authOverlay.classList.add("show");
+  els.authOverlay.setAttribute("aria-hidden", "false");
+}
+
+function hideAuthOverlay() {
+  if (!els.authOverlay) return;
+  els.authOverlay.classList.remove("show");
+  els.authOverlay.setAttribute("aria-hidden", "true");
+}
+
 
 function formatCurrency(value) {
   if (!Number.isFinite(value)) return "-";
@@ -505,8 +627,9 @@ function pushDashboardEntry(metrics) {
     });
     localStorage.setItem(DASHBOARD_KEY, JSON.stringify(safe.slice(-200)));
   } catch (error) {
-    return;
+    // ignore
   }
+  appendDashboardEntry(metrics).catch(() => {});
 }
 
 function computePaidSum(monthKey) {
@@ -551,6 +674,38 @@ function saveSnapshot() {
     period: periodLabel
   });
   setSnapshotStatus("Snapshot gespeichert.");
+}
+
+function applyPayload(payload) {
+  if (!payload) return;
+  if (payload.settings) {
+    settings = {
+      ...DEFAULT_SETTINGS,
+      ...payload.settings,
+      accounts: Array.isArray(payload.settings.accounts)
+        ? payload.settings.accounts
+        : DEFAULT_SETTINGS.accounts,
+      tenants: Array.isArray(payload.settings.tenants)
+        ? payload.settings.tenants
+        : []
+    };
+    saveSettings(settings);
+  }
+  if (Array.isArray(payload.transactions)) {
+    transactions = deserializeTransactions(payload.transactions);
+    localStorage.setItem(CSV_CACHE_KEY, JSON.stringify(transactions));
+  }
+  if (payload.month && els.monthSelect) {
+    els.monthSelect.value = payload.month;
+    localStorage.setItem(MONTH_KEY, payload.month);
+  }
+  if (payload.account && els.accountSelect) {
+    localStorage.setItem(ACCOUNT_KEY, payload.account);
+    els.accountSelect.value = payload.account;
+  }
+  buildMonthOptions(transactions);
+  populateAccountSelect();
+  renderTenantTable(els.monthSelect.value);
 }
 
 function renderUnmatched(items) {
@@ -875,6 +1030,7 @@ function clearImports() {
   els.statMissing.textContent = "-";
   els.statPartial.textContent = "-";
   triggerAutoBackup();
+  scheduleRemoteSave();
 }
 
 function updateStats(rows, monthKey, scopedTransactions) {
@@ -1053,6 +1209,7 @@ function handleSaveSettings() {
   populateAccountSelect();
   renderTenantTable(els.monthSelect.value);
   triggerAutoBackup();
+  scheduleRemoteSave();
 }
 
 function handleCsvUpload(file) {
@@ -1076,6 +1233,7 @@ function handleCsvUpload(file) {
     }
     renderTenantTable(els.monthSelect.value);
     triggerAutoBackup();
+    scheduleRemoteSave();
   };
   reader.readAsText(file, "ISO-8859-1");
 }
@@ -1096,6 +1254,7 @@ if (els.monthSelect) {
     }
     renderTenantTable(els.monthSelect.value);
     triggerAutoBackup();
+    scheduleRemoteSave();
   });
 }
 
@@ -1105,6 +1264,7 @@ if (els.accountSelect) {
       localStorage.setItem(ACCOUNT_KEY, els.accountSelect.value);
     }
     renderTenantTable(els.monthSelect.value);
+    scheduleRemoteSave();
   });
 }
 
@@ -1160,6 +1320,7 @@ populateSettingsForm();
 populateAccountSelect();
 
 function restoreCachedCsv() {
+  if (remoteLoaded) return;
   const raw = localStorage.getItem(CSV_CACHE_KEY);
   if (!raw) return;
   try {
@@ -1186,11 +1347,10 @@ function restoreCachedCsv() {
   }
 }
 
-restoreCachedCsv();
-
 async function restoreBackupIfNeeded() {
   const handle = await loadBackupHandle().catch(() => null);
   await updateBackupStatus(handle);
+  if (remoteLoaded) return;
   const cached = localStorage.getItem(CSV_CACHE_KEY);
   if (cached) return;
   if (!handle) return;
@@ -1286,4 +1446,60 @@ if (els.backupNowBtn) {
 }
 
 initBackupHandle();
-restoreBackupIfNeeded();
+async function handleLogin() {
+  if (!els.loginUser || !els.loginPass) return;
+  const username = els.loginUser.value.trim();
+  const password = els.loginPass.value.trim();
+  const email = toEmail(username);
+  if (!username || !password) {
+    if (els.loginError) {
+      els.loginError.textContent = "Bitte Benutzername und Passwort eingeben.";
+    }
+    return;
+  }
+  try {
+    if (!auth) {
+      throw new Error("auth_missing");
+    }
+    await signInWithEmailAndPassword(auth, email, password);
+    hideAuthOverlay();
+  } catch (error) {
+    if (els.loginError) {
+      els.loginError.textContent = "Login fehlgeschlagen.";
+    }
+  }
+}
+
+if (els.loginBtn) {
+  els.loginBtn.addEventListener("click", () => {
+    handleLogin();
+  });
+}
+
+if (auth && onAuthStateChanged) {
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (!user) {
+      currentProfile = null;
+      showAuthOverlay();
+      return;
+    }
+    hideAuthOverlay();
+    const profile = await ensureUserProfile(user);
+    if (profile && profile.role === "disabled") {
+      if (els.loginError) {
+        els.loginError.textContent = "Konto deaktiviert.";
+      }
+      await signOut(auth);
+      return;
+    }
+    currentProfile = profile;
+    await loadRemoteData();
+    restoreCachedCsv();
+    restoreBackupIfNeeded();
+  });
+} else {
+  showAuthOverlay();
+  restoreCachedCsv();
+  restoreBackupIfNeeded();
+}

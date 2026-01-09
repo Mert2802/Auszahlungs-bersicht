@@ -55,6 +55,7 @@
               </span>
               <span>Vorschau</span>
             </button>
+            <button id="openAdminBtn" class="ghost admin-only" type="button">Benutzer</button>
           </div>
           <div class="kpi-grid" id="kpiGrid">
             <div class="kpi-card" data-kpi="revenue">
@@ -174,6 +175,52 @@
     </div>
   </div>
 
+  <div id="adminOverlay" class="overlay" aria-hidden="true">
+    <div class="overlay-card admin-overlay-card" role="dialog" aria-modal="true">
+      <div class="overlay-header">
+        <div>
+          <p class="eyebrow">Admin</p>
+          <h2>Benutzerverwaltung</h2>
+          <p class="subtle">Neue Benutzer anlegen oder deaktivieren.</p>
+        </div>
+        <button id="closeAdminBtn" class="icon-button" aria-label="Schlie&szlig;en">x</button>
+      </div>
+      <div class="overlay-body">
+        <div class="admin-form">
+          <label>
+            Benutzername
+            <input id="newUserName" type="text" placeholder="user1">
+          </label>
+          <label>
+            Passwort
+            <input id="newUserPass" type="password" placeholder="Passwort">
+          </label>
+          <label class="checkbox">
+            <input id="newUserAdmin" type="checkbox">
+            Admin
+          </label>
+          <button id="addUserBtn" class="ghost" type="button">Benutzer anlegen</button>
+        </div>
+        <p id="adminError" class="error" aria-live="polite"></p>
+        <div class="table-wrap">
+          <table class="table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Benutzer</th>
+                <th>Rolle</th>
+                <th>Aktion</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="overlay-footer">
+        <button id="closeAdminBtnFooter" type="button">Schlie&szlig;en</button>
+      </div>
+    </div>
+  </div>
+
   <aside id="menuPanel" class="menu-panel" aria-hidden="true">
     <div class="menu-header">
       <h3>Navigation</h3>
@@ -189,7 +236,8 @@
     </div>
   </aside>
 
-  <script src="hub.js"></script>
+  <script type="module" src="../shared/firebase-init.js"></script>
+  <script type="module" src="hub.js"></script>
 </body>
 </html>
 
