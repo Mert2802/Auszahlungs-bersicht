@@ -437,7 +437,15 @@ function parseCSV(text) {
 
 function buildTransactions(rows) {
   if (!rows.length) return [];
-  const headers = rows[0].map((header) => String(header || "").trim());
+  let headerIndex = 0;
+  if (
+    rows[0].length === 1 &&
+    /^sep=/.test(String(rows[0][0] || "").trim().toLowerCase())
+  ) {
+    headerIndex = 1;
+  }
+  if (!rows[headerIndex]) return [];
+  const headers = rows[headerIndex].map((header) => String(header || "").trim());
   const normalized = headers.map((header) => normalizeHeaderName(header));
   const findIndex = (needles) => {
     const list = Array.isArray(needles) ? needles : [needles];
@@ -452,7 +460,7 @@ function buildTransactions(rows) {
   const idxPartner = findIndex(["beguenstigter", "zahlungspflichtiger", "empfaenger"]);
   const idxIban = findIndex(["kontonummer", "iban"]);
   const idxAmount = findIndex(["betrag"]);
-  const dataRows = rows.slice(1);
+  const dataRows = rows.slice(headerIndex + 1);
   return dataRows
     .map((row) => {
       const bookingDate = parseDate(row[idxBookingDate]);
