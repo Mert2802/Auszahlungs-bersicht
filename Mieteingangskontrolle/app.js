@@ -437,15 +437,21 @@ function parseCSV(text) {
 
 function buildTransactions(rows) {
   if (!rows.length) return [];
-  const headers = rows[0].map((header) => header.trim());
-  const indexOf = (name) => headers.indexOf(name);
-  const idxDate = indexOf("Valutadatum");
-  const idxBookingDate = indexOf("Buchungstag");
-  const idxText = indexOf("Buchungstext");
-  const idxPurpose = indexOf("Verwendungszweck");
-  const idxPartner = indexOf("Beguenstigter/Zahlungspflichtiger");
-  const idxIban = indexOf("Kontonummer/IBAN");
-  const idxAmount = indexOf("Betrag");
+  const headers = rows[0].map((header) => String(header || "").trim());
+  const normalized = headers.map((header) => normalizeHeaderName(header));
+  const findIndex = (needles) => {
+    const list = Array.isArray(needles) ? needles : [needles];
+    return normalized.findIndex((header) =>
+      list.some((needle) => header.includes(needle))
+    );
+  };
+  const idxDate = findIndex(["valutadatum"]);
+  const idxBookingDate = findIndex(["buchungstag", "buchungsdatum"]);
+  const idxText = findIndex(["buchungstext"]);
+  const idxPurpose = findIndex(["verwendungszweck"]);
+  const idxPartner = findIndex(["beguenstigter", "zahlungspflichtiger", "empfaenger"]);
+  const idxIban = findIndex(["kontonummer", "iban"]);
+  const idxAmount = findIndex(["betrag"]);
   const dataRows = rows.slice(1);
   return dataRows
     .map((row) => {
@@ -463,6 +469,17 @@ function buildTransactions(rows) {
       };
     })
     .filter((entry) => entry.date);
+}
+
+function normalizeHeaderName(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/\//g, "")
+    .replace(/\u00e4/g, "ae")
+    .replace(/\u00f6/g, "oe")
+    .replace(/\u00fc/g, "ue")
+    .replace(/\u00df/g, "ss");
 }
 
 function buildMonthOptions(items) {
