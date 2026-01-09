@@ -44,7 +44,7 @@ const DEFAULT_COLUMN_ORDER = [
 ];
 
 const DEFAULT_HEADER = {
-  titleLine1: "Booking Auszahlungsuebersicht",
+  titleLine1: "Booking Auszahlungs\u00fcbersicht",
   titleLine2: "",
   showGroupRow: false
 };
@@ -1229,7 +1229,7 @@ els.resetMappingBtn.addEventListener("click", () => {
   state.mapping = DEFAULT_MAPPING.slice();
   saveMapping();
   renderMappingTable();
-  setStatus("Mapping zurueckgesetzt.");
+  setStatus("Mapping zur\u00fcckgesetzt.");
 });
 
 els.saveRenamesBtn.addEventListener("click", () => {
@@ -1255,7 +1255,7 @@ els.resetRenamesBtn.addEventListener("click", () => {
     state.output.columns = buildColumns();
     renderResultTable(state.output);
   }
-  setStatus("Spaltennamen zurueckgesetzt.");
+  setStatus("Spaltennamen zur\u00fcckgesetzt.");
 });
 
 els.titleLine1.addEventListener("input", () => {

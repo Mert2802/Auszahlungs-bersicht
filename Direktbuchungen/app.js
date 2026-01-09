@@ -61,7 +61,7 @@ function setProgress(percent) {
 function updateFileList(files) {
   fileList.innerHTML = "";
   if (!files || !files.length) {
-    fileList.textContent = "Keine PDFs ausgewaehlt.";
+    fileList.textContent = "Keine PDFs ausgew\u00e4hlt.";
     return;
   }
   Array.from(files).forEach((file) => {
@@ -577,7 +577,7 @@ function buildGroupHeaderRow(columnsList) {
 
 async function buildPreview() {
   if (!pdfInput.files.length) {
-    setStatus("Bitte zuerst PDFs auswaehlen.");
+    setStatus("Bitte zuerst PDFs ausw\u00e4hlen.");
     return;
   }
   if (!window.pdfjsLib) {
@@ -1125,7 +1125,7 @@ resetMappingBtn.addEventListener("click", () => {
   state.mapping = {};
   state.mappingKeys = [];
   renderMappingList({});
-  setStatus("Mapping zurueckgesetzt.");
+  setStatus("Mapping zur\u00fcckgesetzt.");
 });
 
 addMappingBtn.addEventListener("click", () => {

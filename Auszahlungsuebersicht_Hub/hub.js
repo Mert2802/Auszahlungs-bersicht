@@ -153,8 +153,8 @@ function normalizePeriod(value) {
   const monthMap = [
     ["januar", "Januar"],
     ["februar", "Februar"],
-    ["marz", "Maerz"],
-    ["maerz", "Maerz"],
+    ["marz", "M\u00e4rz"],
+    ["maerz", "M\u00e4rz"],
     ["april", "April"],
     ["mai", "Mai"],
     ["juni", "Juni"],
@@ -284,7 +284,7 @@ function getPreviousPeriodLabel(label) {
   const monthNames = [
     "Januar",
     "Februar",
-    "Maerz",
+    "M\u00e4rz",
     "April",
     "Mai",
     "Juni",
@@ -477,7 +477,7 @@ function renderDashboard() {
     dashboardEls.feesTrend.textContent = "Vormonat: -";
     dashboardEls.taxTrend.textContent = "Vormonat: -";
     dashboardEls.payoutTrend.textContent = "Vormonat: -";
-    dashboardEls.updated.textContent = "Keine Daten fuer die Auswahl.";
+    dashboardEls.updated.textContent = "Keine Daten f\u00fcr die Auswahl.";
     return;
   }
   const totals = sumMetrics(latestEntries);
@@ -628,10 +628,10 @@ function renderSnapshotModal() {
         `<span>${periodLabel || "-"}</span>` +
         `<span class="muted">${systemLabel(entry.system)}</span>` +
         `<span class="muted">${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span>` +
-        `<button type="button" class="ghost">Loeschen</button>`;
+        `<button type="button" class="ghost">L\u00f6schen</button>`;
       const btn = row.querySelector("button");
       btn.addEventListener("click", () => {
-        const ok = window.confirm("Diesen Snapshot wirklich loeschen?");
+        const ok = window.confirm("Diesen Snapshot wirklich l\u00f6schen?");
         if (!ok) return;
         const raw = readDashboardHistory();
         const idx = raw.findIndex(

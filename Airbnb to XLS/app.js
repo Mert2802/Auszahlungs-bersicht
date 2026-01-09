@@ -89,7 +89,7 @@ const defaultColumns = [
 ];
 
 const defaultHeaderConfig = {
-  titleLine1: "Airbnb Auszahlungsuebersicht",
+  titleLine1: "Airbnb Auszahlungs\u00fcbersicht",
   titleLine2: "Dezember 2025",
   showGroupRow: true
 };
@@ -157,7 +157,7 @@ function setProgress(percent) {
 
 function updateFileName(file) {
   if (!file) {
-    fileNameEl.textContent = "Keine Datei ausgewaehlt";
+  fileNameEl.textContent = "Keine Datei ausgew\u00e4hlt";
     return;
   }
   fileNameEl.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
@@ -1530,7 +1530,7 @@ function nextCustomKey(existingKeys) {
 
 previewBtn.addEventListener("click", () => {
   if (!csvInput.files.length) {
-    setStatus("Bitte zuerst eine CSV-Datei auswaehlen.");
+    setStatus("Bitte zuerst eine CSV-Datei ausw\u00e4hlen.");
     return;
   }
 
@@ -1701,7 +1701,7 @@ resetMappingBtn.addEventListener("click", () => {
   state.columns = defaultColumns.map((column) => ({ ...column }));
   state.header = { ...defaultHeaderConfig };
   saveStoredMappings();
-  setStatus("Konfiguration zurueckgesetzt.");
+  setStatus("Konfiguration zur\u00fcckgesetzt.");
 });
 
 mappingOverlay.addEventListener("click", (event) => {

@@ -15,12 +15,12 @@
           <h1>CSV filtern, zuordnen, als Excel exportieren</h1>
           <p class="sub">
             CSV hochladen, Regeln pflegen und eine abgespeckte Tabelle
-            mit Beherbergungs-ID und Strasse erzeugen.
+            mit Beherbergungs-ID und Stra&szlig;e erzeugen.
           </p>
         </div>
         <div class="hero-actions">
           <button id="openMappingBtn" class="primary">Regeln &amp; Spalten bearbeiten</button>
-          <button id="resetMappingBtn" class="ghost">Zuruecksetzen</button>
+          <button id="resetMappingBtn" class="ghost">Zur&uuml;cksetzen</button>
         </div>
       </header>
 
@@ -31,9 +31,9 @@
             <input id="csvFile" type="file" accept=".csv,text/csv" class="visually-hidden" />
             <div class="dropzone-inner">
               <p class="drop-title">Datei hier ablegen</p>
-              <p class="drop-sub">oder klicken zum Auswaehlen</p>
-              <button id="pickFileBtn" type="button" class="ghost">Datei waehlen</button>
-              <p id="fileName" class="file-name">Keine Datei ausgewaehlt</p>
+              <p class="drop-sub">oder klicken zum Ausw&auml;hlen</p>
+              <button id="pickFileBtn" type="button" class="ghost">Datei w&auml;hlen</button>
+              <p id="fileName" class="file-name">Keine Datei ausgew&auml;hlt</p>
             </div>
           </div>
           <div class="progress-row">
@@ -48,7 +48,7 @@
         <div class="action-card">
           <h2>Auswertung</h2>
           <p class="subtle">
-            Vorschau erzeugen, Ergebnis pruefen und direkt als echte Excel-Datei
+            Vorschau erzeugen, Ergebnis pr&uuml;fen und direkt als echte Excel-Datei
             herunterladen.
           </p>
           <div class="actions">
@@ -75,12 +75,12 @@
         <div class="overlay-header">
           <div>
             <p class="eyebrow">Konfiguration</p>
-            <h2>Regeln, Strassen, Spalten</h2>
+            <h2>Regeln, Stra&szlig;en, Spalten</h2>
             <p class="subtle">
-              Reihenfolge per Drag &amp; Drop aendern. Erste passende Regel gewinnt.
+              Reihenfolge per Drag &amp; Drop &auml;ndern. Erste passende Regel gewinnt.
             </p>
           </div>
-          <button id="closeOverlayBtn" class="icon-button" aria-label="Schliessen">x</button>
+          <button id="closeOverlayBtn" class="icon-button" aria-label="Schlie&szlig;en">x</button>
         </div>
 
         <div class="overlay-body">
@@ -104,27 +104,27 @@
             <h3>Inserat -> ID</h3>
             <p class="hint">Text aus dem Inserat, der enthalten sein muss.</p>
             <div id="ruleList" class="list"></div>
-            <button id="addRuleBtn">Regel hinzufuegen</button>
+            <button id="addRuleBtn">Regel hinzuf&uuml;gen</button>
           </section>
 
           <section>
-            <h3>ID -> Strasse</h3>
-            <p class="hint">Beherbergungs-ID mit Strasse verknuepfen.</p>
+            <h3>ID -> Stra&szlig;e</h3>
+            <p class="hint">Beherbergungs-ID mit Stra&szlig;e verkn&uuml;pfen.</p>
             <div id="streetList" class="list"></div>
-            <button id="addStreetBtn">Strasse hinzufuegen</button>
+            <button id="addStreetBtn">Stra&szlig;e hinzuf&uuml;gen</button>
           </section>
 
           <section>
             <h3>Spalten &amp; Formeln</h3>
             <p class="hint">
-              Spaltennamen oder Berechnungen aendern. Verfuegbare Variablen:
+              Spaltennamen oder Berechnungen &auml;ndern. Verf&uuml;gbare Variablen:
               <code>brutto</code>, <code>reinigung</code>, <code>anpassungen</code>,
               <code>service</code>, <code>adjustment_service</code>, <code>payout</code>,
-              <code>sp1</code>...<code>sp7</code>. Keys duerfen nur Buchstaben, Zahlen und
+              <code>sp1</code>...<code>sp7</code>. Keys d&uuml;rfen nur Buchstaben, Zahlen und
               _ enthalten.
             </p>
             <div id="columnList" class="list"></div>
-            <button id="addColumnBtn">Spalte hinzufuegen</button>
+            <button id="addColumnBtn">Spalte hinzuf&uuml;gen</button>
           </section>
         </div>
 

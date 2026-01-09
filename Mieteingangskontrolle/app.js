@@ -167,7 +167,7 @@ async function readBackup(handle) {
 async function updateBackupStatus(handle) {
   if (!els.backupStatus) return;
   if (!handle) {
-    els.backupStatus.textContent = "Kein Speicherort gewaehlt.";
+  els.backupStatus.textContent = "Kein Speicherort gew\u00e4hlt.";
     return;
   }
   els.backupStatus.textContent = "Auto-Backup aktiv.";
@@ -537,7 +537,7 @@ function setSnapshotStatus(message) {
 function saveSnapshot() {
   const monthKey = els.monthSelect ? els.monthSelect.value : "";
   if (!monthKey) {
-    setSnapshotStatus("Bitte zuerst einen Zeitraum waehlen.");
+    setSnapshotStatus("Bitte zuerst einen Zeitraum w\u00e4hlen.");
     return;
   }
   const periodLabel = formatPeriodLabel(monthKey);
@@ -607,7 +607,7 @@ function exportEurCsv() {
       "Saldo",
       "Datum",
       "Buchungstext",
-      "Empfaenger",
+      "Empf\u00e4nger",
       "Verwendungszweck"
     ]
   ];
@@ -742,7 +742,7 @@ function buildEurSheetData(monthKey, summaryRows, detailsRows, sumIncome, sumExp
     ["SUMME", formatAmountEuro(sumIncome), formatAmountEuro(sumExpense), formatAmountEuro(saldo)]
   ];
   const detailsTable = [
-    ["Datum", "Buchungstext", "Empfaenger", "Verwendungszweck", "Kategorie", "Einnahme", "Ausgabe"],
+    ["Datum", "Buchungstext", "Empf\u00e4nger", "Verwendungszweck", "Kategorie", "Einnahme", "Ausgabe"],
     ...detailsRows.map((row) => [
       row.date,
       row.text,
@@ -753,7 +753,7 @@ function buildEurSheetData(monthKey, summaryRows, detailsRows, sumIncome, sumExp
       row.expense ? formatAmountEuro(row.expense) : ""
     ])
   ];
-  const title = `Einnahmen-Ueberschuss-Rechnung ${monthKey}`;
+  const title = `Einnahmen-\u00dcberschuss-Rechnung ${monthKey}`;
   const labelRow = 1;
   const headerRow = 2;
   const detailStartCol = 6;
@@ -839,11 +839,11 @@ function clearImports() {
   const selectedAccount = getSelectedAccountId();
   const scopeLabel =
     selectedMonth && selectedAccount && selectedAccount !== "Alle"
-      ? `Monat ${selectedMonth} (nur gewaehltes Konto)`
+      ? `Monat ${selectedMonth} (nur gew\u00e4hltes Konto)`
       : selectedMonth
         ? `Monat ${selectedMonth} (alle Konten)`
         : "alle Daten";
-  const ok = window.confirm(`Imports loeschen: ${scopeLabel}?`);
+  const ok = window.confirm(`Imports l\u00f6schen: ${scopeLabel}?`);
   if (!ok) return;
   if (selectedMonth) {
     transactions = transactions.filter((entry) => {
@@ -1060,7 +1060,7 @@ function handleCsvUpload(file) {
   reader.onload = () => {
     const accountId = getSelectedAccountId();
     if (!accountId || accountId === "Alle") {
-      window.alert("Bitte zuerst ein Konto auswaehlen.");
+      window.alert("Bitte zuerst ein Konto ausw\u00e4hlen.");
       return;
     }
     const rows = parseCSV(String(reader.result || ""));
