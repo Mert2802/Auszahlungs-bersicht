@@ -249,8 +249,11 @@ select {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 16px;
   padding: 20px;
+  max-height: min(86vh, 860px);
+  overflow: hidden;
 }
 
 .overlay-header {
@@ -263,6 +266,9 @@ select {
 .overlay-body {
   display: grid;
   gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .overlay-footer {
