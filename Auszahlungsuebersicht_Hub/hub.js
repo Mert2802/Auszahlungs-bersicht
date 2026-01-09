@@ -78,6 +78,26 @@ const targets = {
   miete: "../Mieteingangskontrolle/index.html"
 };
 
+const menuTargetButtons = menuPanel
+  ? Array.from(menuPanel.querySelectorAll("button[data-target]"))
+  : [];
+const menuDashboardBtn = document.getElementById("goDashboardBtn");
+
+function updateMenuTargets(activeKey) {
+  if (!menuTargetButtons.length) return;
+  menuTargetButtons.forEach((btn) => {
+    if (!activeKey) {
+      btn.style.display = "";
+      return;
+    }
+    const isActive = btn.dataset.target === activeKey;
+    btn.style.display = isActive ? "none" : "";
+  });
+  if (menuDashboardBtn) {
+    menuDashboardBtn.style.display = activeKey ? "" : "none";
+  }
+}
+
 function toEmail(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -115,11 +135,12 @@ function setTarget(key) {
     welcome.style.display = key ? "none" : "flex";
   }
   if (menuToggle) {
-    menuToggle.classList.toggle("visible", Boolean(key));
+    menuToggle.classList.toggle("visible", true);
   }
   if (menuPanel) {
     menuPanel.classList.remove("show");
   }
+  updateMenuTargets(key);
 }
 
 buttons.forEach((btn) => {
@@ -980,6 +1001,13 @@ document.addEventListener("click", (event) => {
     menuToggle.setAttribute("aria-expanded", "false");
   }
 });
+
+const logo = document.querySelector(".logo");
+if (logo) {
+  logo.addEventListener("click", () => {
+    setTarget("");
+  });
+}
 
 if (auth && onAuthStateChanged) {
   onAuthStateChanged(auth, async (user) => {
