@@ -225,22 +225,38 @@ function setProgress(percent) {
   progressText.textContent = `${safe}%`;
 }
 
-function updateFileName(file) {
-  if (!file) {
-  fileNameEl.textContent = "Keine Datei ausgew\u00e4hlt";
-    return;
-  }
-  fileNameEl.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+function normalizeFileList(files) {
+  return Array.from(files || []).filter((file) => file && file.name);
 }
 
-function setFile(file) {
-  if (!file) {
+function updateFileName(files) {
+  const list = normalizeFileList(files);
+  if (!list.length) {
+    fileNameEl.textContent = "Keine Datei ausgew\u00e4hlt";
+    return;
+  }
+  if (list.length === 1) {
+    const file = list[0];
+    fileNameEl.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+    return;
+  }
+  const totalSize = list.reduce((sum, file) => sum + file.size, 0);
+  const preview = list.slice(0, 3).map((file) => file.name);
+  const suffix = list.length > 3 ? ` +${list.length - 3}` : "";
+  fileNameEl.textContent = `${list.length} Dateien (${Math.round(
+    totalSize / 1024
+  )} KB) \u2022 ${preview.join(", ")}${suffix}`;
+}
+
+function setFiles(files) {
+  const list = normalizeFileList(files);
+  if (!list.length) {
     return;
   }
   const dataTransfer = new DataTransfer();
-  dataTransfer.items.add(file);
+  list.forEach((file) => dataTransfer.items.add(file));
   csvInput.files = dataTransfer.files;
-  updateFileName(file);
+  updateFileName(list);
   setProgress(0);
 }
 
@@ -524,6 +540,44 @@ function standardizeRows(rows, headers) {
     "Reinigungsgeb\u00fchr": row[normalizedMap.reinigungsgebuehr] || "",
     "Servicegeb\u00fchr": row[normalizedMap.servicegebuehr] || ""
   }));
+}
+
+async function readCsvFiles(files) {
+  const list = normalizeFileList(files);
+  if (!list.length) {
+    throw new Error("Bitte zuerst eine CSV-Datei ausw\u00e4hlen.");
+  }
+
+  const totalBytes = list.reduce((sum, file) => sum + file.size, 0);
+  let loadedBytes = 0;
+  const allRows = [];
+
+  for (const file of list) {
+    const text = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onprogress = (event) => {
+        if (!event.lengthComputable) {
+          return;
+        }
+        const overall = loadedBytes + event.loaded;
+        const percent = totalBytes
+          ? Math.round((overall / totalBytes) * 100)
+          : 0;
+        setProgress(percent);
+      };
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error(`Datei konnte nicht gelesen werden: ${file.name}`));
+      reader.readAsText(file, "utf-8");
+    });
+
+    const parsed = parseCsv(text);
+    const standardized = standardizeRows(parsed.rows, parsed.headers);
+    allRows.push(...standardized);
+    loadedBytes += file.size;
+    setProgress(totalBytes ? Math.round((loadedBytes / totalBytes) * 100) : 100);
+  }
+
+  return allRows;
 }
 
 function findId(inserat, rules) {
@@ -1628,47 +1682,27 @@ function nextCustomKey(existingKeys) {
   return `custom_${index}`;
 }
 
-previewBtn.addEventListener("click", () => {
-  if (!csvInput.files.length) {
-    setStatus("Bitte zuerst eine CSV-Datei ausw\u00e4hlen.");
-    return;
+previewBtn.addEventListener("click", async () => {
+  try {
+    setProgress(0);
+    const rows = await readCsvFiles(csvInput.files);
+    state.rows = rows;
+    state.output = buildOutput(
+      rows,
+      state.mappings.rules,
+      state.mappings.streets,
+      state.columns
+    );
+    renderTable(state.output);
+    if (snapshotBtn) {
+      snapshotBtn.disabled = state.output.rows.length === 0;
+    }
+    downloadBtn.disabled = state.output.rows.length === 0;
+    setProgress(100);
+    setStatus(`Fertig. ${state.output.rows.length} Zeilen erzeugt.`);
+  } catch (error) {
+    setStatus(`Fehler beim Verarbeiten: ${error.message}`);
   }
-
-  const file = csvInput.files[0];
-  const reader = new FileReader();
-  setProgress(0);
-  reader.onprogress = (event) => {
-    if (event.lengthComputable) {
-      setProgress(Math.round((event.loaded / event.total) * 100));
-    }
-  };
-  reader.onload = () => {
-    try {
-      const parsed = parseCsv(reader.result);
-      const standardized = standardizeRows(parsed.rows, parsed.headers);
-      state.rows = standardized;
-      state.output = buildOutput(
-        standardized,
-        state.mappings.rules,
-        state.mappings.streets,
-        state.columns
-      );
-      renderTable(state.output);
-      if (snapshotBtn) {
-        snapshotBtn.disabled = state.output.rows.length === 0;
-      }
-      downloadBtn.disabled = state.output.rows.length === 0;
-      setProgress(100);
-      setStatus(`Fertig. ${state.output.rows.length} Zeilen erzeugt.`);
-    } catch (error) {
-      setStatus(`Fehler beim Verarbeiten: ${error.message}`);
-    }
-  };
-  reader.onerror = () => {
-    setStatus("Datei konnte nicht gelesen werden.");
-  };
-
-  reader.readAsText(file, "utf-8");
 });
 
 downloadBtn.addEventListener("click", () => {
@@ -1826,15 +1860,14 @@ dropZone.addEventListener("dragleave", () => {
 dropZone.addEventListener("drop", (event) => {
   event.preventDefault();
   dropZone.classList.remove("drag");
-  const file = event.dataTransfer.files[0];
-  if (file) {
-    setFile(file);
+  const files = event.dataTransfer.files;
+  if (files && files.length) {
+    setFiles(files);
   }
 });
 
 csvInput.addEventListener("change", () => {
-  const file = csvInput.files[0];
-  updateFileName(file);
+  updateFileName(csvInput.files);
   setProgress(0);
 });
 
