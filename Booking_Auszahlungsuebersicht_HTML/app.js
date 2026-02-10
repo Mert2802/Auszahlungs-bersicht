@@ -367,15 +367,35 @@ function extractBookingNumber(notes) {
   return match ? match[1] : null;
 }
 
-function extractSumFromColumn(rows, key, needles) {
+function extractSumFromRow(rows, needles, valueKeys) {
   const list = Array.isArray(needles) ? needles : [needles];
+  const keys = Array.isArray(valueKeys) ? valueKeys : [valueKeys];
   let total = 0;
   rows.forEach((row) => {
-    const val = normalizeText(row[key] || "").toLowerCase();
-    const hit = list.some((needle) => val.includes(needle));
-    if (hit) {
-      total += Math.abs(parseMoneySmart(row[key]));
+    let hitValue = null;
+    let hit = false;
+    Object.keys(row).some((key) => {
+      const val = normalizeText(row[key] || "").toLowerCase();
+      if (list.some((needle) => val.includes(needle))) {
+        hitValue = row[key];
+        hit = true;
+        return true;
+      }
+      return false;
+    });
+    if (!hit) return;
+    let amount = Math.abs(parseMoneySmart(hitValue));
+    if (amount === 0) {
+      for (const key of keys) {
+        if (!key) continue;
+        const candidate = Math.abs(parseMoneySmart(row[key]));
+        if (candidate !== 0) {
+          amount = candidate;
+          break;
+        }
+      }
     }
+    total += amount;
   });
   return total;
 }
@@ -397,12 +417,22 @@ function buildBlocksFromBookingList(rows) {
     .map((group) => {
       const notes = group.map((r) => r.Notizen || "").join(" ");
       const bookingNo = extractBookingNumber(notes);
-      const cleaning = extractSumFromColumn(group, "Abreise", ["reinigungsgeb", "cleaning"]);
-      const overnight = extractSumFromColumn(group, "Position", [
+      const cleaning = extractSumFromRow(group, ["reinigungsgeb", "cleaning"], [
+        "Preis",
+        "Anreise",
+        "Abreise",
+        "Position"
+      ]);
+      const overnight = extractSumFromRow(group, [
         "uebernachtungssteuer",
         "ubernachtungssteuer",
         "nachtungssteuer",
         "overnight"
+      ], [
+        "Preis",
+        "Anreise",
+        "Abreise",
+        "Position"
       ]);
       return {
         Buchungsnummer_clean: bookingNo,
@@ -512,10 +542,10 @@ function computeResult(bookingRows, payoutRows) {
         ...block,
         ...payout
       };
-      mergedRow.Bruttobetrag = mergedRow.Bruttobetrag_brutto - mergedRow.Uebernachtungssteuer_num;
-      mergedRow["Zwischensumme (BmGI Beherbergungssteuer)"] = mergedRow.Bruttobetrag - mergedRow.Reinigungsgebuehr_num;
-      mergedRow.Auszahlungsbetrag =
-        mergedRow.Bruttobetrag - mergedRow.Kommissionen + mergedRow.Uebernachtungssteuer_num;
+      mergedRow.Bruttobetrag = mergedRow.Bruttobetrag_brutto;
+      mergedRow["Zwischensumme (BmGI Beherbergungssteuer)"] =
+        mergedRow.Bruttobetrag - mergedRow.Reinigungsgebuehr_num;
+      mergedRow.Auszahlungsbetrag = mergedRow.Bruttobetrag - mergedRow.Kommissionen;
       mergedRow.Beherbergungssteuer = mergedRow["Zwischensumme (BmGI Beherbergungssteuer)"] * 0.05;
       const mapped = mapIdAndStreet(mergedRow.Unterkunftsname);
       mergedRow.Beherbergungsidentifikationsnummer = mapped.id;
