@@ -65,6 +65,7 @@ const {
 const state = {
   bookingFile: null,
   payoutFile: null,
+  payoutFile2: null,
   mapping: [],
   renames: {},
   groupLabels: {},
@@ -93,8 +94,11 @@ const els = {
   resultTableBody: document.querySelector("#resultTable tbody"),
   bookingName: document.getElementById("bookingName"),
   payoutName: document.getElementById("payoutName"),
+  payoutName2: document.getElementById("payoutName2"),
   bookingProgress: document.getElementById("bookingProgress"),
   payoutProgress: document.getElementById("payoutProgress"),
+  payoutProgress2: document.getElementById("payoutProgress2"),
+  payoutFile2: document.getElementById("payoutFile2"),
   titleLine1: document.getElementById("titleLine1"),
   titleLine2: document.getElementById("titleLine2"),
   showGroupRow: document.getElementById("showGroupRow"),
@@ -443,6 +447,36 @@ function buildBlocksFromBookingList(rows) {
     .filter((row) => row.Buchungsnummer_clean);
 }
 
+function parseBookingExport(text) {
+  const cleaned = text.replace(/^\uFEFF/, "");
+  const lines = cleaned.split(/\r?\n/);
+  const blocks = [];
+  let currentBlock = null;
+  const recordStart = /^\d{5,};\d{2}\.\d{2}\.\d{2};/;
+
+  for (const line of lines) {
+    if (recordStart.test(line)) {
+      if (currentBlock !== null) blocks.push(currentBlock);
+      currentBlock = line;
+    } else if (currentBlock !== null) {
+      currentBlock += "\n" + line;
+    }
+  }
+  if (currentBlock !== null) blocks.push(currentBlock);
+
+  const results = [];
+  for (const block of blocks) {
+    const bnMatch = block.match(/Buchungsnummer:\s*(\d+)/);
+    if (!bnMatch) continue;
+    const cleaningMatch = block.match(/Reinigungsgeb[uü]hr\s*[-–]\s*EUR\s*([\d,.]+)/i);
+    results.push({
+      Buchungsnummer_clean: bnMatch[1],
+      Reinigungsgebuehr_num: cleaningMatch ? parseMoneySmart(cleaningMatch[1]) : 0
+    });
+  }
+  return results;
+}
+
 function buildPayoutMini(rows) {
   const filtered = rows.filter((row) => {
     return !row["Art/Transaktionsart"] || String(row["Art/Transaktionsart"]).trim() === "Buchung";
@@ -528,11 +562,12 @@ function buildColumns() {
   }));
 }
 
-function computeResult(bookingRows, payoutRows) {
-  const blocks = buildBlocksFromBookingList(bookingRows);
+function computeResult(bookingExportBlocks, payoutRows1, payoutRows2) {
+  const blocks = bookingExportBlocks;
   if (!blocks.length) throw new Error("Keine Buchungsbloecke gefunden.");
 
-  const payoutMini = buildPayoutMini(payoutRows);
+  const allPayoutRows = payoutRows2 ? [...payoutRows1, ...payoutRows2] : [...payoutRows1];
+  const payoutMini = buildPayoutMini(allPayoutRows);
   const payoutMap = new Map(payoutMini.map((r) => [r.Referenznummer, r]));
   const merged = blocks
     .map((block) => {
@@ -877,6 +912,10 @@ function setFile(type, file) {
     state.bookingFile = file;
     els.bookingName.textContent = file ? file.name : "Keine Datei";
     els.bookingProgress.style.width = "0%";
+  } else if (type === "payout2") {
+    state.payoutFile2 = file;
+    els.payoutName2.textContent = file ? file.name : "Keine Datei";
+    els.payoutProgress2.style.width = "0%";
   } else {
     state.payoutFile = file;
     els.payoutName.textContent = file ? file.name : "Keine Datei";
@@ -1341,6 +1380,10 @@ els.payoutFile.addEventListener("change", (event) => {
   setFile("payout", event.target.files[0] || null);
 });
 
+els.payoutFile2.addEventListener("change", (event) => {
+  setFile("payout2", event.target.files[0] || null);
+});
+
 els.addMappingRowBtn.addEventListener("click", () => {
   state.mapping.push({ Keyword: "", Beherbergungsidentifikationsnummer: "", Strasse: "" });
   renderMappingTable();
@@ -1437,7 +1480,7 @@ els.overlay.addEventListener("click", (event) => {
 
 els.runBtn.addEventListener("click", async () => {
   if (!state.bookingFile || !state.payoutFile) {
-    setStatus("Bitte BookingList CSV und Payout CSV hochladen.", "error");
+    setStatus("Bitte Booking Export CSV und mindestens Payout CSV Account 1 hochladen.", "error");
     return;
   }
   try {
@@ -1451,9 +1494,18 @@ els.runBtn.addEventListener("click", async () => {
       els.payoutProgress,
       els.payoutName
     );
-    const bookingRows = parseCsv(bookingText, ";");
-    const payoutRows = parseCsv(payoutText, ",");
-    state.output = computeResult(bookingRows, payoutRows);
+    let payoutText2 = "";
+    if (state.payoutFile2) {
+      payoutText2 = await readFileAsTextWithProgress(
+        state.payoutFile2,
+        els.payoutProgress2,
+        els.payoutName2
+      );
+    }
+    const bookingBlocks = parseBookingExport(bookingText);
+    const payoutRows1 = parseCsv(payoutText, ",");
+    const payoutRows2 = payoutText2 ? parseCsv(payoutText2, ",") : [];
+    state.output = computeResult(bookingBlocks, payoutRows1, payoutRows2);
     renderResultTable(state.output);
     if (els.snapshotBtn) {
       els.snapshotBtn.disabled = false;

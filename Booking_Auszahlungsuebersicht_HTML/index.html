@@ -25,7 +25,7 @@
         </div>
         <div class="upload-grid">
           <label class="file-card drop-zone" data-drop="booking">
-            <span>1) BookingList CSV (Separator ;)</span>
+            <span>1) Booking Export CSV (Channelmanager, Separator ;)</span>
             <input id="bookingFile" type="file" accept=".csv">
             <div class="file-meta">
               <span id="bookingName" class="file-name">Keine Datei</span>
@@ -35,12 +35,22 @@
             </div>
           </label>
           <label class="file-card drop-zone" data-drop="payout">
-            <span>2) Payout CSV (Separator ,)</span>
+            <span>2) Payout CSV Account 1 (Separator ,)</span>
             <input id="payoutFile" type="file" accept=".csv">
             <div class="file-meta">
               <span id="payoutName" class="file-name">Keine Datei</span>
               <div class="progress">
                 <div id="payoutProgress" class="progress-bar"></div>
+              </div>
+            </div>
+          </label>
+          <label class="file-card drop-zone" data-drop="payout2">
+            <span>3) Payout CSV Account 2 (optional, Separator ,)</span>
+            <input id="payoutFile2" type="file" accept=".csv">
+            <div class="file-meta">
+              <span id="payoutName2" class="file-name">Keine Datei</span>
+              <div class="progress">
+                <div id="payoutProgress2" class="progress-bar"></div>
               </div>
             </div>
           </label>
